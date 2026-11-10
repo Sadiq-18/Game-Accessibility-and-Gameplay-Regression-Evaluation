@@ -1,4 +1,4 @@
-# Godot Game Accessibility Benchmark: Run Report
+# Game Accessibility and Gameplay Regression Evaluation: Run Report
 
 ## Empirical AI-agent results
 
