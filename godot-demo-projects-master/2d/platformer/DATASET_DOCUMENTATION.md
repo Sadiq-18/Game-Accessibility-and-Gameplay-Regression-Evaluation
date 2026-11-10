@@ -1,11 +1,11 @@
-# Dataset Documentation: Godot Game Accessibility Benchmark
+# Dataset Documentation: Game Accessibility and Gameplay Regression Evaluation
 ---
 
 ## 1. Overview and Purpose
 
-The **Godot Game Accessibility Benchmark (GAB-36)** is a task-based dataset specifically designed to evaluate whether AI coding agents can implement accessibility improvements in existing open-source game projects without causing regressions in previously working gameplay.
+The **Game Accessibility and Gameplay Regression Evaluation** benchmark is a task-based dataset designed to evaluate whether AI coding agents can implement accessibility improvements in existing open-source game projects without causing regressions in previously working gameplay.
 
-While existing benchmarks (e.g., *GameDevBench*, *SWE-Game*) focus on general tutorial tasks or bug repairs, GAB-36 focuses on:
+While existing benchmarks (e.g., *GameDevBench*, *SWE-Game*) focus on general tutorial tasks or bug repairs, this benchmark focuses on:
 1. **Accessibility Compliance**: Verification against explicit, observable acceptance criteria derived from the **Xbox Accessibility Guidelines (XAG)**.
 2. **Gameplay Preservation**: Explicit regression testing to confirm that the game's core interactive mechanics remain fully intact.
 
@@ -44,7 +44,7 @@ These labels are screening annotations, not task-completion labels or measuremen
   - Script architecture (`.gd` scripts and autoloads).
   - Existing audio bus layouts (`default_bus_layout.tres`).
 - Irrelevant files (e.g. engine export presets, editor caches) were excluded to focus strictly on game scripts and GUI scenes.
-- No player-participant data or agent execution logs are part of GAB-36. The dataset consists of authored candidate task specifications and screening annotations.
+- No player-participant data or agent execution logs are part of the dataset. It consists of authored candidate task specifications and screening annotations.
 
 ### 3.3 Task Specification and Annotation
 Each task in the dataset was authored and annotated according to the schema defined in Section 4.4 of the research paper:
