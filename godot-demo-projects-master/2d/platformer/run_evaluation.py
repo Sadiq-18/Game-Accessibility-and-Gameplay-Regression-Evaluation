@@ -62,7 +62,7 @@ def report_metrics(metrics: dict[str, Any]) -> list[str]:
 
 def render_report(agent_metrics: dict[str, Any], demo_metrics: dict[str, Any], evaluations: list[dict[str, Any]], blocked_runs: list[dict[str, Any]]) -> str:
     lines = [
-        "# Godot Game Accessibility Benchmark: Run Report", "",
+        "# Game Accessibility and Gameplay Regression Evaluation: Run Report", "",
         "## Empirical AI-agent results", "",
         *report_metrics(agent_metrics), "",
         f"Blocked runs excluded from metrics: {len(blocked_runs)}", "",
