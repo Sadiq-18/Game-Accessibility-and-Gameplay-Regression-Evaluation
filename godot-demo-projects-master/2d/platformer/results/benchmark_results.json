@@ -1,6 +1,6 @@
 {
   "benchmark_metadata": {
-    "dataset_name": "Godot Game Accessibility Benchmark (GAB-36)",
+    "dataset_name": "Game Accessibility and Gameplay Regression Evaluation",
     "evaluation_engine": "Dual-Outcome Regression & Accessibility Evaluator v1.1",
     "run_records_file": "dataset\\agent_runs.json",
     "empirical_agent_runs_only": "agent_run records with required provenance fields",
