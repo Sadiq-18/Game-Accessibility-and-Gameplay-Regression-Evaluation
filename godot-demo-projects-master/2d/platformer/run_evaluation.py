@@ -136,7 +136,7 @@ def run_benchmark(runs_path: Path) -> None:
     output_dir.mkdir(exist_ok=True)
     output_payload = {
         "benchmark_metadata": {
-            "dataset_name": "Godot Game Accessibility Benchmark (GAB-36)",
+            "dataset_name": "Game Accessibility and Gameplay Regression Evaluation",
             "evaluation_engine": "Dual-Outcome Regression & Accessibility Evaluator v1.1",
             "run_records_file": str(runs_path),
             "empirical_agent_runs_only": "agent_run records with required provenance fields",
@@ -150,7 +150,7 @@ def run_benchmark(runs_path: Path) -> None:
     (output_dir / "benchmark_results.json").write_text(json.dumps(output_payload, indent=2) + "\n", encoding="utf-8")
     (output_dir / "evaluation_report.md").write_text(render_report(agent_metrics, demo_metrics, evaluations, blocked_runs), encoding="utf-8")
 
-    print("GODOT GAME ACCESSIBILITY BENCHMARK (GAB-36)")
+    print("GAME ACCESSIBILITY AND GAMEPLAY REGRESSION EVALUATION")
     print(f"Loaded {len(evaluator.tasks)} task specifications and {len(records)} run records.")
     print(f"Blocked runs excluded from metrics: {len(blocked_runs)}")
     print("\nEMPIRICAL AI-AGENT RESULTS")
