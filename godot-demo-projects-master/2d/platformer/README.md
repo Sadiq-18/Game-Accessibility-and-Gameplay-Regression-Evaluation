@@ -1,4 +1,4 @@
-# GAB-36 evaluation package and Platformer project
+# Game Accessibility and Gameplay Regression Evaluation: Platformer Package
 
 This directory contains the Python evaluation model, 36 candidate-task specifications, 30 observed task-run records, and the Godot 2D Platformer project. For complete installation and reproduction instructions, see the repository-root `README.md`.
 
@@ -16,7 +16,7 @@ The methodology is a rule-based dual-outcome evaluation model, not a trained RL 
 
 ## Contents
 
-- `dataset/tasks_36.json`: complete GAB-36 task specifications.
+- `dataset/tasks_36.json`: the complete 36-task benchmark specifications.
 - `dataset/agent_runs.json`: measured run outcomes and provenance.
 - `dataset/demo_runs.json`: synthetic examples used only to demonstrate the classifier.
 - `src/evaluator.py` and `run_evaluation.py`: evaluator and CLI.
