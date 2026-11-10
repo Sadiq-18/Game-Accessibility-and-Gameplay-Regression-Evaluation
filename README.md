@@ -101,4 +101,3 @@ GAB-36 is a set of 36 authored task specifications across three official Godot d
 
 The dual-outcome model is runnable and the 30 recorded results reproduce through the CLI. The current package is complete for those 30 runs; it does not claim full 36-task experimental coverage. Before claiming all 36 tasks are implemented and evaluated, run and document RPG-07 through RPG-12 with fresh-baseline patches and captured output.
 
-

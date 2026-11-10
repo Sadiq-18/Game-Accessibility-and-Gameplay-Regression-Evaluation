@@ -1,0 +1,115 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..38457a2 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,8 @@
+ extends CanvasLayer
+ 
+ signal start_game
++@onready var death_fade := $DeathFade as ColorRect
++var _death_fade_tween: Tween
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+@@ -9,6 +11,8 @@ func show_message(text):
+ 
+ 
+ func show_game_over():
++	begin_death_fade()
++	await _death_fade_tween.finished
+ 	show_message("Game Over")
+ 	await $MessageTimer.timeout
+ 	$MessageLabel.text = "Dodge the\nCreeps"
+@@ -17,6 +21,22 @@ func show_game_over():
+ 	$StartButton.show()
+ 
+ 
++func begin_death_fade() -> void:
++	if _death_fade_tween and _death_fade_tween.is_running():
++		_death_fade_tween.kill()
++	death_fade.color = Color(0, 0, 0, 0)
++	death_fade.show()
++	_death_fade_tween = create_tween()
++	_death_fade_tween.tween_property(death_fade, "color:a", 0.28, 0.45).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
++
++
++func reset_death_fade() -> void:
++	if _death_fade_tween and _death_fade_tween.is_running():
++		_death_fade_tween.kill()
++	death_fade.color = Color(0, 0, 0, 0)
++	death_fade.hide()
++
++
+ func update_score(score):
+ 	$ScoreLabel.text = str(score)
+ 
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..9d64e7b 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -12,6 +12,16 @@ events = [SubResource("InputEventAction_fopy7")]
+ [node name="HUD" type="CanvasLayer" unique_id=126421993]
+ script = ExtResource("1")
+ 
++[node name="DeathFade" type="ColorRect" parent="."]
++visible = false
++anchors_preset = 15
++anchor_right = 1.0
++anchor_bottom = 1.0
++grow_horizontal = 2
++grow_vertical = 2
++mouse_filter = 2
++color = Color(0, 0, 0, 0)
++
+ [node name="ScoreLabel" type="Label" parent="." unique_id=1314826100]
+ anchors_preset = 10
+ anchor_right = 1.0
+diff --git a/2d/dodge_the_creeps/main.gd b/2d/dodge_the_creeps/main.gd
+index bd74c2e..466bbc7 100644
+--- a/2d/dodge_the_creeps/main.gd
++++ b/2d/dodge_the_creeps/main.gd
+@@ -13,6 +13,7 @@ func game_over():
+ 
+ func new_game():
+ 	get_tree().call_group(&"mobs", &"queue_free")
++	$HUD.reset_death_fade()
+ 	score = 0
+ 	$Player.start($StartPosition.position)
+ 	$StartTimer.start()
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..d705221
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,31 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud := main.get_node("HUD")
++	var fade := hud.get_node("DeathFade") as ColorRect
++	var mob_timer: Timer = main.get_node("MobTimer")
++	var score_timer: Timer = main.get_node("ScoreTimer")
++	mob_timer.start()
++	score_timer.start()
++	assert(not fade.visible and is_equal_approx(fade.color.a, 0.0), "death fade begins transparent")
++	assert(not mob_timer.is_stopped() and not score_timer.is_stopped(), "game timers active before death")
++	main.call("game_over")
++	assert(score_timer.is_stopped(), "score timer stops on death")
++	assert(mob_timer.is_stopped(), "mob timer stops on death")
++	assert(main.get_node("DeathSound").playing, "death sound still plays")
++	await create_timer(0.18).timeout
++	assert(fade.visible and fade.color.a > 0.0 and fade.color.a < 0.28, "death transition fades gradually")
++	assert(fade.color.a < 1.0, "transition avoids a full-screen flash")
++	await create_timer(0.4).timeout
++	assert(is_equal_approx(fade.color.a, 0.28), "fade settles at gentle opacity")
++	hud.call("reset_death_fade")
++	assert(not fade.visible and is_equal_approx(fade.color.a, 0.0), "new session reset removes fade")
++	assert(main.get_node("Player").get_node("CollisionShape2D") != null, "player collision remains intact")
++	print("PASS: 9 reduced-motion and regression assertions")
++	quit(0)

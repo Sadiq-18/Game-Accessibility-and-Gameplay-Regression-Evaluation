@@ -1,0 +1,252 @@
+diff --git a/2d/role_playing_game/game.tscn b/2d/role_playing_game/game.tscn
+index 6fd0635..2174f39 100644
+--- a/2d/role_playing_game/game.tscn
++++ b/2d/role_playing_game/game.tscn
+@@ -3,6 +3,7 @@
+ [ext_resource type="Script" uid="uid://2a62dnfq4o1b" path="res://game.gd" id="1"]
+ [ext_resource type="PackedScene" uid="uid://cx5dvchcc2v3b" path="res://combat/combat.tscn" id="2"]
+ [ext_resource type="PackedScene" uid="uid://dtaj2nc2g4cb8" path="res://grid_movement/exploration.tscn" id="3"]
++[ext_resource type="PackedScene" path="res://menus/options_menu.tscn" id="4_options"]
+ 
+ [sub_resource type="Animation" id="1"]
+ length = 0.5
+@@ -48,3 +49,5 @@ visible = false
+ 
+ [node name="Camera2D" type="Camera2D" parent="." unique_id=1887632648]
+ offset = Vector2(640, 360)
++
++[node name="OptionsMenu" parent="." instance=ExtResource("4_options")]
+diff --git a/2d/role_playing_game/menus/options_menu.gd b/2d/role_playing_game/menus/options_menu.gd
+new file mode 100644
+index 0000000..d75fd21
+--- /dev/null
++++ b/2d/role_playing_game/menus/options_menu.gd
+@@ -0,0 +1,58 @@
++extends CanvasLayer
++
++const REMAPPABLE_ACTIONS := ["move_up", "move_down", "move_left", "move_right", "ui_accept", "ui_cancel"]
++var awaiting_action := ""
++
++@onready var settings_panel := $Root/SettingsPanel as PanelContainer
++@onready var remap_buttons := $Root/SettingsPanel/Margin/VBox/RemapButtons as VBoxContainer
++
++func _ready() -> void:
++	for action in REMAPPABLE_ACTIONS:
++		_update_button(action)
++	set_process_unhandled_key_input(true)
++
++
++func _on_options_button_pressed() -> void:
++	settings_panel.visible = not settings_panel.visible
++
++
++func _on_close_button_pressed() -> void:
++	settings_panel.hide()
++
++
++func _on_remap_pressed(action: String) -> void:
++	if action not in REMAPPABLE_ACTIONS:
++		return
++	awaiting_action = action
++	(remap_buttons.get_node(action + "Button") as Button).text = "%s: press a key" % action.replace("_", " ").capitalize()
++
++
++func _unhandled_key_input(event: InputEvent) -> void:
++	if awaiting_action.is_empty() or not event is InputEventKey or not event.pressed or event.echo:
++		return
++	var key_event := event as InputEventKey
++	if key_event.keycode == KEY_ESCAPE and awaiting_action != "ui_cancel":
++		var cancelled := awaiting_action
++		awaiting_action = ""
++		_update_button(cancelled)
++		get_viewport().set_input_as_handled()
++		return
++	var action := awaiting_action
++	var replacement := InputEventKey.new()
++	replacement.physical_keycode = key_event.physical_keycode if key_event.physical_keycode != 0 else key_event.keycode
++	for old_event in InputMap.action_get_events(action):
++		if old_event is InputEventKey:
++			InputMap.action_erase_event(action, old_event)
++	InputMap.action_add_event(action, replacement)
++	awaiting_action = ""
++	_update_button(action)
++	get_viewport().set_input_as_handled()
++
++
++func _update_button(action: String) -> void:
++	var key_name := "Not assigned"
++	for event in InputMap.action_get_events(action):
++		if event is InputEventKey:
++			key_name = OS.get_keycode_string(event.physical_keycode if event.physical_keycode != 0 else event.keycode)
++			break
++	(remap_buttons.get_node(action + "Button") as Button).text = "%s: %s" % [action.replace("_", " ").capitalize(), key_name]
+diff --git a/2d/role_playing_game/menus/options_menu.tscn b/2d/role_playing_game/menus/options_menu.tscn
+new file mode 100644
+index 0000000..cc4c558
+--- /dev/null
++++ b/2d/role_playing_game/menus/options_menu.tscn
+@@ -0,0 +1,103 @@
++[gd_scene format=3]
++
++[ext_resource type="Script" path="res://menus/options_menu.gd" id="1_options_script"]
++
++[node name="OptionsMenu" type="CanvasLayer"]
++script = ExtResource("1_options_script")
++
++[node name="Root" type="Control" parent="."]
++layout_mode = 3
++anchors_preset = 15
++anchor_right = 1.0
++anchor_bottom = 1.0
++grow_horizontal = 2
++grow_vertical = 2
++
++[node name="OptionsButton" type="Button" parent="Root"]
++anchors_preset = 1
++anchor_left = 1.0
++anchor_right = 1.0
++offset_left = -190.0
++offset_top = 12.0
++offset_right = -20.0
++offset_bottom = 62.0
++grow_horizontal = 0
++text = "Options"
++
++[node name="SettingsPanel" type="PanelContainer" parent="Root"]
++visible = false
++anchors_preset = 8
++anchor_left = 0.5
++anchor_top = 0.5
++anchor_right = 0.5
++anchor_bottom = 0.5
++offset_left = -300.0
++offset_top = -320.0
++offset_right = 300.0
++offset_bottom = 320.0
++grow_horizontal = 2
++grow_vertical = 2
++
++[node name="Margin" type="MarginContainer" parent="Root/SettingsPanel"]
++layout_mode = 2
++theme_override_constants/margin_left = 24
++theme_override_constants/margin_top = 18
++theme_override_constants/margin_right = 24
++theme_override_constants/margin_bottom = 18
++
++[node name="VBox" type="VBoxContainer" parent="Root/SettingsPanel/Margin"]
++layout_mode = 2
++theme_override_constants/separation = 8
++
++[node name="Title" type="Label" parent="Root/SettingsPanel/Margin/VBox"]
++layout_mode = 2
++text = "Controls and Options"
++horizontal_alignment = 1
++
++[node name="RemapButtons" type="VBoxContainer" parent="Root/SettingsPanel/Margin/VBox"]
++unique_name_in_owner = true
++layout_mode = 2
++theme_override_constants/separation = 6
++
++[node name="move_upButton" type="Button" parent="Root/SettingsPanel/Margin/VBox/RemapButtons"]
++custom_minimum_size = Vector2(520, 44)
++layout_mode = 2
++text = "Move Up"
++
++[node name="move_downButton" type="Button" parent="Root/SettingsPanel/Margin/VBox/RemapButtons"]
++custom_minimum_size = Vector2(520, 44)
++layout_mode = 2
++text = "Move Down"
++
++[node name="move_leftButton" type="Button" parent="Root/SettingsPanel/Margin/VBox/RemapButtons"]
++custom_minimum_size = Vector2(520, 44)
++layout_mode = 2
++text = "Move Left"
++
++[node name="move_rightButton" type="Button" parent="Root/SettingsPanel/Margin/VBox/RemapButtons"]
++custom_minimum_size = Vector2(520, 44)
++layout_mode = 2
++text = "Move Right"
++
++[node name="ui_acceptButton" type="Button" parent="Root/SettingsPanel/Margin/VBox/RemapButtons"]
++custom_minimum_size = Vector2(520, 44)
++layout_mode = 2
++text = "Confirm"
++
++[node name="ui_cancelButton" type="Button" parent="Root/SettingsPanel/Margin/VBox/RemapButtons"]
++custom_minimum_size = Vector2(520, 44)
++layout_mode = 2
++text = "Cancel"
++
++[node name="CloseButton" type="Button" parent="Root/SettingsPanel/Margin/VBox"]
++layout_mode = 2
++text = "Close"
++
++[connection signal="pressed" from="Root/OptionsButton" to="." method="_on_options_button_pressed"]
++[connection signal="pressed" from="Root/SettingsPanel/Margin/VBox/CloseButton" to="." method="_on_close_button_pressed"]
++[connection signal="pressed" from="Root/SettingsPanel/Margin/VBox/RemapButtons/move_upButton" to="." method="_on_remap_pressed" binds= ["move_up"]]
++[connection signal="pressed" from="Root/SettingsPanel/Margin/VBox/RemapButtons/move_downButton" to="." method="_on_remap_pressed" binds= ["move_down"]]
++[connection signal="pressed" from="Root/SettingsPanel/Margin/VBox/RemapButtons/move_leftButton" to="." method="_on_remap_pressed" binds= ["move_left"]]
++[connection signal="pressed" from="Root/SettingsPanel/Margin/VBox/RemapButtons/move_rightButton" to="." method="_on_remap_pressed" binds= ["move_right"]]
++[connection signal="pressed" from="Root/SettingsPanel/Margin/VBox/RemapButtons/ui_acceptButton" to="." method="_on_remap_pressed" binds= ["ui_accept"]]
++[connection signal="pressed" from="Root/SettingsPanel/Margin/VBox/RemapButtons/ui_cancelButton" to="." method="_on_remap_pressed" binds= ["ui_cancel"]]
+diff --git a/2d/role_playing_game/tests/agent_run_check.gd b/2d/role_playing_game/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..f66e6be
+--- /dev/null
++++ b/2d/role_playing_game/tests/agent_run_check.gd
+@@ -0,0 +1,55 @@
++extends SceneTree
++
++func has_key(action: String, key: Key) -> bool:
++	for event in InputMap.action_get_events(action):
++		if event is InputEventKey and (event.physical_keycode == key or event.keycode == key):
++			return true
++	return false
++
++func rebind(menu: Node, action: String, key: Key) -> void:
++	menu.call("_on_remap_pressed", action)
++	var event := InputEventKey.new()
++	event.physical_keycode = key
++	event.pressed = true
++	menu.call("_unhandled_key_input", event)
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var game: Node = load("res://game.tscn").instantiate()
++	root.add_child(game)
++	await process_frame
++	var menu: CanvasLayer = game.get_node("OptionsMenu")
++	var panel := menu.get_node("Root/SettingsPanel") as PanelContainer
++	assert(not panel.visible, "settings panel starts closed")
++	menu.call("_on_options_button_pressed")
++	assert(panel.visible, "Options button opens panel")
++	for action in ["move_up", "move_down", "move_left", "move_right", "ui_accept", "ui_cancel"]:
++		assert(menu.get_node("Root/SettingsPanel/Margin/VBox/RemapButtons/%sButton" % action) != null, "%s control exists" % action)
++	assert(has_key("move_left", KEY_A), "baseline movement key exists")
++	rebind(menu, "move_left", KEY_Q)
++	assert(has_key("move_left", KEY_Q), "movement key remaps")
++	var q := InputEventKey.new()
++	q.physical_keycode = KEY_Q
++	q.pressed = true
++	Input.parse_input_event(q)
++	await process_frame
++	var player: Pawn = game.get_node("Exploration/Grid/Player")
++	assert(player.get_input_direction().x == -1.0, "remapped key drives exploration movement")
++	Input.action_release("move_left")
++	rebind(menu, "ui_accept", KEY_ENTER)
++	assert(has_key("ui_accept", KEY_ENTER), "menu confirm action remaps")
++	rebind(menu, "ui_cancel", KEY_BACKSPACE)
++	assert(has_key("ui_cancel", KEY_BACKSPACE), "menu cancel action remaps")
++	var old_up := has_key("move_up", KEY_W)
++	menu.call("_on_remap_pressed", "move_up")
++	var escape := InputEventKey.new()
++	escape.keycode = KEY_ESCAPE
++	escape.pressed = true
++	menu.call("_unhandled_key_input", escape)
++	assert(has_key("move_up", KEY_W) == old_up, "Escape cancels capture without changing movement")
++	menu.call("_on_close_button_pressed")
++	assert(not panel.visible, "Close button closes options")
++	print("PASS: 13 exploration and menu-remap assertions")
++	quit(0)

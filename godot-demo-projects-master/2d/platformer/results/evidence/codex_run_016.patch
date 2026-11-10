@@ -1,0 +1,165 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..b9e8885 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,55 @@
+ extends CanvasLayer
+ 
+ signal start_game
++const REMAPPABLE_ACTIONS := ["move_up", "move_down", "move_left", "move_right"]
++var awaiting_remap_action := ""
++@onready var remap_buttons := $InputRemap as VBoxContainer
++
++func _ready() -> void:
++	for action in REMAPPABLE_ACTIONS:
++		_update_remap_button(action)
++	set_process_unhandled_key_input(true)
++
++
++func _on_remap_button_pressed(action: String) -> void:
++	if action not in REMAPPABLE_ACTIONS:
++		return
++	awaiting_remap_action = action
++	var button := remap_buttons.get_node(action + "Button") as Button
++	button.text = "%s: press a key" % action.replace("_", " ").capitalize()
++
++
++func _unhandled_key_input(event: InputEvent) -> void:
++	if awaiting_remap_action.is_empty() or not event is InputEventKey or not event.pressed or event.echo:
++		return
++	var key_event := event as InputEventKey
++	if key_event.keycode == KEY_ESCAPE:
++		var cancelled_action := awaiting_remap_action
++		awaiting_remap_action = ""
++		_update_remap_button(cancelled_action)
++		return
++	var action := awaiting_remap_action
++	var remapped := InputEventKey.new()
++	remapped.physical_keycode = key_event.physical_keycode if key_event.physical_keycode != 0 else key_event.keycode
++	for existing in InputMap.action_get_events(action):
++		if existing is InputEventKey:
++			InputMap.action_erase_event(action, existing)
++	InputMap.action_add_event(action, remapped)
++	awaiting_remap_action = ""
++	_update_remap_button(action)
++	get_viewport().set_input_as_handled()
++
++
++func _update_remap_button(action: String) -> void:
++	if action.is_empty():
++		return
++	var key_name := "Not assigned"
++	for event in InputMap.action_get_events(action):
++		if event is InputEventKey:
++			key_name = OS.get_keycode_string(event.physical_keycode if event.physical_keycode != 0 else event.keycode)
++			break
++	var button := remap_buttons.get_node(action + "Button") as Button
++	button.text = "%s: %s" % [action.replace("_", " ").capitalize(), key_name]
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..8041fdf 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -57,5 +57,39 @@ text = "Start"
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
++[node name="InputRemap" type="VBoxContainer" parent="."]
++offset_left = 10.0
++offset_top = 310.0
++offset_right = 190.0
++offset_bottom = 555.0
++
++[node name="RemapHeader" type="Label" parent="InputRemap"]
++layout_mode = 2
++text = "Remap movement"
++
++[node name="move_upButton" type="Button" parent="InputRemap"]
++custom_minimum_size = Vector2(180, 32)
++layout_mode = 2
++text = "Move Up"
++
++[node name="move_downButton" type="Button" parent="InputRemap"]
++custom_minimum_size = Vector2(180, 32)
++layout_mode = 2
++text = "Move Down"
++
++[node name="move_leftButton" type="Button" parent="InputRemap"]
++custom_minimum_size = Vector2(180, 32)
++layout_mode = 2
++text = "Move Left"
++
++[node name="move_rightButton" type="Button" parent="InputRemap"]
++custom_minimum_size = Vector2(180, 32)
++layout_mode = 2
++text = "Move Right"
++
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
++[connection signal="pressed" from="InputRemap/move_upButton" to="." method="_on_remap_button_pressed" binds= ["move_up"]]
++[connection signal="pressed" from="InputRemap/move_downButton" to="." method="_on_remap_button_pressed" binds= ["move_down"]]
++[connection signal="pressed" from="InputRemap/move_leftButton" to="." method="_on_remap_button_pressed" binds= ["move_left"]]
++[connection signal="pressed" from="InputRemap/move_rightButton" to="." method="_on_remap_button_pressed" binds= ["move_right"]]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..5bf1e9e
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,55 @@
++extends SceneTree
++
++func has_physical_key(action: String, code: Key) -> bool:
++	for event in InputMap.action_get_events(action):
++		if event is InputEventKey and event.physical_keycode == code:
++			return true
++	return false
++
++func has_non_keyboard_event(action: String) -> bool:
++	for event in InputMap.action_get_events(action):
++		if not event is InputEventKey:
++			return true
++	return false
++
++func rebind(hud: Node, action: String, key: Key) -> void:
++	hud.call("_on_remap_button_pressed", action)
++	var event := InputEventKey.new()
++	event.physical_keycode = key
++	event.pressed = true
++	hud.call("_unhandled_key_input", event)
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud := main.get_node("HUD")
++	for action in ["move_up", "move_down", "move_left", "move_right"]:
++		assert(InputMap.has_action(action), "%s action exists" % action)
++		assert(hud.get_node("InputRemap/%sButton" % action) != null, "%s remap control exists" % action)
++	rebind(hud, "move_left", KEY_Q)
++	assert(has_physical_key("move_left", KEY_Q), "left mapping updates")
++	assert(hud.get_node("InputRemap/move_leftButton").text.ends_with("Q"), "left mapping displayed")
++	var q_event := InputEventKey.new()
++	q_event.physical_keycode = KEY_Q
++	q_event.pressed = true
++	Input.parse_input_event(q_event)
++	await process_frame
++	assert(Input.is_action_pressed("move_left"), "remapped key activates player movement action")
++	Input.parse_input_event(q_event.duplicate())
++	var release := InputEventKey.new()
++	release.physical_keycode = KEY_Q
++	Input.parse_input_event(release)
++	rebind(hud, "move_up", KEY_I)
++	rebind(hud, "move_down", KEY_K)
++	rebind(hud, "move_right", KEY_L)
++	assert(has_physical_key("move_up", KEY_I), "up mapping updates")
++	assert(has_physical_key("move_down", KEY_K), "down mapping updates")
++	assert(has_physical_key("move_right", KEY_L), "right mapping updates")
++	assert(InputMap.has_action("start_game"), "start-game action remains registered")
++	assert(main.get_node("Player").speed == 400, "player speed remains unchanged")
++	print("PASS: 12 remapping and regression assertions")
++	quit(0)

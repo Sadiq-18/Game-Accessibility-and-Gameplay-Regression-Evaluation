@@ -1,0 +1,589 @@
+[
+  {
+    "run_id": "codex-godot-plat-01-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-01",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_001.md; results/evidence/codex_run_001_test.log; results/evidence/codex_run_001.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single Codex implementation run against a clean upstream revision. The scripted checks cover Normal/Large selection, immediate 30px/24px font overrides, viewport bounds, content-driven minimum sizes, non-overlapping menu rows, in-process instance persistence, and selected gameplay regression paths. This is one task-level run, not a broad or statistically conclusive benchmark."
+  },
+  {
+    "run_id": "codex-godot-plat-02-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-02",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_002.md; results/evidence/codex_run_002_test.log; results/evidence/codex_run_002.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single Codex implementation run from the clean upstream revision. Eleven assertions check remap UI, InputMap registration, Escape/pause preservation, new-instance key display, and double-jump. Physical keyboard use was not tested."
+  },
+  {
+    "run_id": "codex-godot-plat-03-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-03",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_003.md; results/evidence/codex_run_003_test.log; results/evidence/codex_run_003.patch",
+    "changed_files": [
+      "default_bus_layout.tres",
+      "music.tscn",
+      "player/player.tscn",
+      "level/coin.tscn",
+      "enemy/enemy.tscn",
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single Codex implementation run from the clean upstream revision. Eleven assertions check separate Master/Music/SFX buses, control behavior, routing, and menu-instance persistence. Headless tests did not verify audible output on a physical device."
+  },
+  {
+    "run_id": "codex-godot-plat-04-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-04",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_004.md; results/evidence/codex_run_004_test.log; results/evidence/codex_run_004.patch",
+    "changed_files": [
+      "default_bus_layout.tres",
+      "music.tscn",
+      "player/player.tscn",
+      "level/coin.tscn",
+      "enemy/enemy.tscn",
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single Codex implementation run from the clean upstream revision. Twelve assertions verify visible mute controls, independent AudioServer mute state, exact SFX volume restoration, menu-instance persistence, pause/resume, and a jump while muted. Physical audio output was unavailable."
+  },
+  {
+    "run_id": "codex-godot-plat-05-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-05",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_005.md; results/evidence/codex_run_005_test.log; results/evidence/codex_run_005.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single Codex implementation run from the clean upstream revision. Eleven assertions verify visible toggle, >=4.5:1 button text contrast, strong focus border, preserved menu signals, menu-instance preference, and reverting to the shared theme."
+  },
+  {
+    "run_id": "codex-godot-plat-06-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-06",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_006.md; results/evidence/codex_run_006_test.log; results/evidence/codex_run_006.patch",
+    "changed_files": [
+      "player/player.gd",
+      "player/player.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Seven assertions verify monochrome P1/P2 badges, labels, collision masks, and viewport sizes. Godot exited 0 with ObjectDB/resource cleanup warnings; physical-display accessibility validation not performed."
+  },
+  {
+    "run_id": "codex-godot-plat-07-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-07",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_007.md; results/evidence/codex_run_007_test.log; results/evidence/codex_run_007.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Seven assertions verify reduced-motion toggle, zeroing and restoring parallax scales, setting state, and player collision mask. Godot exited 0 with ObjectDB/resource cleanup warnings. No human motion sensitivity evaluation."
+  },
+  {
+    "run_id": "codex-godot-plat-08-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-08",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_008.md; results/evidence/codex_run_008_test.log; results/evidence/codex_run_008.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Eight assertions verify 100/125/150% CanvasLayer transforms and restoration, plus player collision mask. Godot exited 0 with ObjectDB/resource cleanup warnings. Screen-size visual overflow was not manually validated."
+  },
+  {
+    "run_id": "codex-godot-plat-09-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-09",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_009.md; results/evidence/codex_run_009_test.log; results/evidence/codex_run_009.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "player/player.gd",
+      "enemy/enemy.gd",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Eight assertions check default and assisted gravity/enemy speed values and restoration, setting state, and player collision mask. Godot exited 0 with ObjectDB/resource cleanup warnings. No human difficulty evaluation."
+  },
+  {
+    "run_id": "codex-godot-plat-10-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-10",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_010.md; results/evidence/codex_run_010_test.log; results/evidence/codex_run_010.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "player/player.gd",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Six assertions; simulated held shooting generated four bullets in one second, with cooldown behavior, state changes, input release, and collision mask checked. Godot exited 0 with ObjectDB/resource cleanup warnings. No physical input study."
+  },
+  {
+    "run_id": "codex-godot-plat-11-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-11",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_011.md; results/evidence/codex_run_011_test.log; results/evidence/codex_run_011.patch",
+    "changed_files": [
+      "level/level.tscn",
+      "level/caption_overlay.gd",
+      "level/caption_overlay.tscn",
+      "level/coin.gd",
+      "player/player.gd",
+      "player/gun.gd",
+      "enemy/enemy.gd",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Nine assertions exercise jump/shoot/enemy/coin event captions, visible text, timer configuration, and player collision mask. Godot exited 0 with ObjectDB/resource cleanup warnings. Human caption usability not tested."
+  },
+  {
+    "run_id": "codex-godot-plat-12-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-PLAT-12",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; project viewport 800x480",
+    "evidence": "results/evidence/codex_run_012.md; results/evidence/codex_run_012_test.log; results/evidence/codex_run_012.patch",
+    "changed_files": [
+      "gui/pause_menu.gd",
+      "gui/pause_menu.tscn",
+      "tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Ten assertions verify Jump/Shoot gamepad capture, input map mutation, keyboard mapping preservation, displayed button identifiers, simulated jump action, and collision mask. Godot exited 0 with ObjectDB/resource cleanup warnings. Physical controller not tested."
+  },
+  {
+    "run_id": "codex-godot-dtc-01-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-01",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_013.md; results/evidence/codex_run_013_test.log; results/evidence/codex_run_013.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/main.gd",
+      "2d/dodge_the_creeps/main.tscn",
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Ten assertions check selector, difficulty parameters, actual mob velocities, timer configuration, and player presence. Godot test exited 0 without runtime warnings. No full-session human difficulty study."
+  },
+  {
+    "run_id": "codex-godot-dtc-02-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-02",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_014.md; results/evidence/codex_run_014_test.log; results/evidence/codex_run_014.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/main.gd",
+      "2d/dodge_the_creeps/main.tscn",
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/mob.gd",
+      "2d/dodge_the_creeps/player.gd",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Nine assertions verify palette values across player, new mobs, and background, restoring defaults, and player speed. Godot exited 0 without warnings. No color-vision user study."
+  },
+  {
+    "run_id": "codex-godot-dtc-03-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-03",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_015.md; results/evidence/codex_run_015_test.log; results/evidence/codex_run_015.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/main.gd",
+      "2d/dodge_the_creeps/main.tscn",
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Eight assertions verify separate buses, music/death/button routing, both sliders setting correct independent decibel values, and player scene presence. Godot exited 0 without warnings. Human loudness testing not performed."
+  },
+  {
+    "run_id": "codex-godot-dtc-04-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-04",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_016.md; results/evidence/codex_run_016_test.log; results/evidence/codex_run_016.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Twelve assertions verify four remap controls, rebinding and simulated movement input, unchanged start action and player speed. Godot exited 0 without warnings. Physical keyboard not tested."
+  },
+  {
+    "run_id": "codex-godot-dtc-05-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-05",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_017.md; results/evidence/codex_run_017_test.log; results/evidence/codex_run_017.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/main.gd",
+      "2d/dodge_the_creeps/main.tscn",
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/mob.gd",
+      "2d/dodge_the_creeps/mob.tscn",
+      "2d/dodge_the_creeps/player.gd",
+      "2d/dodge_the_creeps/player.tscn",
+      "2d/dodge_the_creeps/outline.gdshader",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Nine assertions verify shader compilation and configuration, toggle behavior for player/new mobs, and gameplay speed. Godot exited 0. Screenshot/pixel visual QA and user accessibility tests are explicitly not performed."
+  },
+  {
+    "run_id": "codex-godot-dtc-06-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-06",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_018.md; results/evidence/codex_run_018_test.log; results/evidence/codex_run_018.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-baseline run. Seven assertions check the mute control, instant Master-bus mute/unmute, music/death audio routing, and player presence. Godot exited 0. Physical audio output not measured."
+  },
+  {
+    "run_id": "codex-godot-dtc-07-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-07",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_019.md; results/evidence/codex_run_019_test.log; results/evidence/codex_run_019.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Ten assertions check Normal/Large control, score/message fonts, large-message width, session preference, restore, and player speed. Godot exited 0 without warnings. Human usability not tested."
+  },
+  {
+    "run_id": "codex-godot-dtc-08-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-08",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_020.md; results/evidence/codex_run_020_test.log; results/evidence/codex_run_020.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single run from clean upstream revision. Nine assertions verify 100/125/150% uniform CanvasLayer scaling, centered origin, restoration, and unchanged player speed/mob timer. Godot exited 0 without warnings. Rendered bounds were not visually verified."
+  },
+  {
+    "run_id": "codex-godot-dtc-09-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-09",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_021.md; results/evidence/codex_run_021_test.log; results/evidence/codex_run_021.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/main.gd",
+      "2d/dodge_the_creeps/main.tscn",
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-baseline run. Ten assertions verify warning placement, direction, flashing, delayed spawn and hide, plus original mob speed/player speed. Godot exited 0 without warnings. Human salience evaluation not performed."
+  },
+  {
+    "run_id": "codex-godot-dtc-10-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-10",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_022.md; results/evidence/codex_run_022_test.log; results/evidence/codex_run_022.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/player.gd",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-baseline run. Eight assertions verify pointer-directed movement, preserved keyboard movement when disabled, viewport bounds, and collision shape. Simulated headless cursor reports unusual screen coords (-125.7,0); GUI confirmation still recommended."
+  },
+  {
+    "run_id": "codex-godot-dtc-11-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-11",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_023.md; results/evidence/codex_run_023_test.log; results/evidence/codex_run_023.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/main.gd",
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-baseline run. Nine assertions verify opacity/timing/reset, no full-screen flash, both timers stopping, death audio, and player collision. Godot exited 0 with object/resource cleanup warnings from intentionally unfinished game-over async flow. No user photosensitivity study."
+  },
+  {
+    "run_id": "codex-godot-dtc-12-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-DTC-12",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; 480x720 base viewport",
+    "evidence": "results/evidence/codex_run_024.md; results/evidence/codex_run_024_test.log; results/evidence/codex_run_024.patch",
+    "changed_files": [
+      "2d/dodge_the_creeps/main.gd",
+      "2d/dodge_the_creeps/hud.gd",
+      "2d/dodge_the_creeps/hud.tscn",
+      "2d/dodge_the_creeps/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-baseline run. Ten assertions verify captions for Music Start, Death Sound, and New Score, underlying events, timer hide, and player collision. Godot exited 0 with object/resource cleanup warnings from asynchronous game-over at shutdown. Human readability/sync not evaluated."
+  },
+  {
+    "run_id": "codex-godot-rpg-01-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-RPG-01",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; RPG demo 1280x720",
+    "evidence": "results/evidence/codex_run_025.md; results/evidence/codex_run_025_test.log; results/evidence/codex_run_025.patch",
+    "changed_files": [
+      "2d/role_playing_game/dialogue/interface/interface.gd",
+      "2d/role_playing_game/dialogue/interface/interface.tscn",
+      "2d/role_playing_game/combat/interface/ui.gd",
+      "2d/role_playing_game/combat/combat.tscn",
+      "2d/role_playing_game/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-upstream run adapted to the existing RPG project because requested dialogue_box/options_menu paths are absent. Nine assertions verify Normal/Large text for dialogue and battle commands, session persistence, and original scene controls. Godot exited 0. Human visual test not performed."
+  },
+  {
+    "run_id": "codex-godot-rpg-02-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-RPG-02",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; RPG demo 1280x720",
+    "evidence": "results/evidence/codex_run_026.md; results/evidence/codex_run_026_test.log; results/evidence/codex_run_026.patch",
+    "changed_files": [
+      "2d/role_playing_game/dialogue/interface/interface.gd",
+      "2d/role_playing_game/dialogue/interface/interface.tscn",
+      "2d/role_playing_game/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-upstream run adapted to existing dialogue/interface path because the proposed dialogue_box file is absent. Ten assertions check opacity slider and persistent white/yellow/cyan text choices while retaining dialogue controls. Godot exited 0. Human visual contrast test not performed."
+  },
+  {
+    "run_id": "codex-godot-rpg-03-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-RPG-03",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; RPG demo 1280x720",
+    "evidence": "results/evidence/codex_run_027.md; results/evidence/codex_run_027_test.log; results/evidence/codex_run_027.patch",
+    "changed_files": [
+      "2d/role_playing_game/game.tscn",
+      "2d/role_playing_game/menus/options_menu.gd",
+      "2d/role_playing_game/menus/options_menu.tscn",
+      "2d/role_playing_game/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-upstream run; task target menus/options_menu did not exist and was implemented. Thirteen assertions verify six movement/confirm/cancel controls, Left-to-Q remapping in actual exploration player, action preservation, opening/closing, and Escape cancellation. Godot exited 0 with RID/ObjectDB/resource cleanup warnings from full scene allocation at shutdown."
+  },
+  {
+    "run_id": "codex-godot-rpg-04-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-RPG-04",
+    "accessibility_checks_passed": false,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; RPG demo 1280x720",
+    "evidence": "results/evidence/codex_run_028.md; results/evidence/codex_run_028_test.log; results/evidence/codex_run_028.patch",
+    "changed_files": [
+      "2d/role_playing_game/default_bus_layout.tres",
+      "2d/role_playing_game/game.tscn",
+      "2d/role_playing_game/menus/options_menu.gd",
+      "2d/role_playing_game/menus/options_menu.tscn",
+      "2d/role_playing_game/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-upstream run. Nine assertions confirm independent volume bus configuration, but actual project contained zero AudioStreamPlayer nodes and no audio assets. Accessibility criterion for distinct audible categories is therefore false; gameplay preserved. Godot exited 0 with full-scene RID/resource warnings."
+  },
+  {
+    "run_id": "codex-godot-rpg-05-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-RPG-05",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; RPG demo 1280x720",
+    "evidence": "results/evidence/codex_run_029.md; results/evidence/codex_run_029_test.log; results/evidence/codex_run_029.patch",
+    "changed_files": [
+      "2d/role_playing_game/combat/interface/info.tscn",
+      "2d/role_playing_game/combat/interface/ui.gd",
+      "2d/role_playing_game/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-upstream run. Seven assertions verify health condition and numeric HP alongside the bar at full health, after damage/healing, and while armored. Godot exited 0. Headless tests do not establish human visual readability or accessibility outcomes."
+  },
+  {
+    "run_id": "codex-godot-rpg-06-001",
+    "run_type": "agent_run",
+    "task_id": "GODOT-RPG-06",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "agent": "OpenAI Codex",
+    "model": "GPT-6",
+    "project_revision": "b761b4cd5718a7118f2c95eb55f181d0a5f004f1",
+    "environment": "Windows; Godot 4.7.2 stable; headless; RPG demo 1280x720",
+    "evidence": "results/evidence/codex_run_030.md; results/evidence/codex_run_030_test.log; results/evidence/codex_run_030.patch",
+    "changed_files": [
+      "2d/role_playing_game/game.tscn",
+      "2d/role_playing_game/combat/combat.tscn",
+      "2d/role_playing_game/combat/interface/ui.gd",
+      "2d/role_playing_game/dialogue/interface/interface.gd",
+      "2d/role_playing_game/menus/options_menu.gd",
+      "2d/role_playing_game/menus/options_menu.tscn",
+      "2d/role_playing_game/tests/agent_run_check.gd"
+    ],
+    "notes": "Single clean-upstream run. Ten assertions verify the options toggle and high-contrast styling for battle menus and dialogue, including black backgrounds, white text/borders, and yellow focus outline. The existing attack action still damages the opponent. Godot exited 0. No display-based visual or user contrast evaluation."
+  }
+]

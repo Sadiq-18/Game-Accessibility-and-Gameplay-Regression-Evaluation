@@ -1,0 +1,170 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..015db29 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,22 @@
+ extends CanvasLayer
+ 
+ signal start_game
++@onready var music_slider := $AudioControls/MusicRow/MusicSlider as HSlider
++@onready var sfx_slider := $AudioControls/SFXRow/SFXSlider as HSlider
++
++func _on_music_slider_value_changed(value: float) -> void:
++	_set_bus_volume("BGM", value)
++
++
++func _on_sfx_slider_value_changed(value: float) -> void:
++	_set_bus_volume("SFX", value)
++
++
++func _set_bus_volume(bus_name: String, value: float) -> void:
++	var bus_index := AudioServer.get_bus_index(bus_name)
++	if bus_index < 0:
++		return
++	AudioServer.set_bus_volume_db(bus_index, linear_to_db(maxf(value / 100.0, 0.0001)))
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+@@ -23,6 +39,7 @@ func update_score(score):
+ 
+ func _on_StartButton_pressed():
+ 	$StartButton.hide()
++	$ButtonSound.play()
+ 	start_game.emit()
+ 
+ 
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..7a23472 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -2,6 +2,7 @@
+ 
+ [ext_resource type="Script" uid="uid://c1g57034r2c0" path="res://hud.gd" id="1"]
+ [ext_resource type="FontFile" uid="uid://bgv586r20ps8e" path="res://fonts/Xolonium-Regular.ttf" id="2_2jm3i"]
++[ext_resource type="AudioStream" uid="uid://td2mgko63p61" path="res://art/gameover.wav" id="3_button_sfx"]
+ 
+ [sub_resource type="InputEventAction" id="InputEventAction_fopy7"]
+ action = &"start_game"
+@@ -57,5 +58,47 @@ text = "Start"
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
++[node name="AudioControls" type="VBoxContainer" parent="."]
++offset_left = 12.0
++offset_top = 90.0
++offset_right = 250.0
++offset_bottom = 168.0
++
++[node name="MusicRow" type="HBoxContainer" parent="AudioControls"]
++layout_mode = 2
++
++[node name="MusicLabel" type="Label" parent="AudioControls/MusicRow"]
++layout_mode = 2
++text = "Music"
++
++[node name="MusicSlider" type="HSlider" parent="AudioControls/MusicRow"]
++custom_minimum_size = Vector2(150, 0)
++layout_mode = 2
++size_flags_horizontal = 3
++min_value = 0.0
++max_value = 100.0
++value = 100.0
++
++[node name="SFXRow" type="HBoxContainer" parent="AudioControls"]
++layout_mode = 2
++
++[node name="SFXLabel" type="Label" parent="AudioControls/SFXRow"]
++layout_mode = 2
++text = "SFX"
++
++[node name="SFXSlider" type="HSlider" parent="AudioControls/SFXRow"]
++custom_minimum_size = Vector2(150, 0)
++layout_mode = 2
++size_flags_horizontal = 3
++min_value = 0.0
++max_value = 100.0
++value = 100.0
++
++[node name="ButtonSound" type="AudioStreamPlayer" parent="."]
++stream = ExtResource("3_button_sfx")
++bus = "SFX"
++
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
++[connection signal="value_changed" from="AudioControls/MusicRow/MusicSlider" to="." method="_on_music_slider_value_changed"]
++[connection signal="value_changed" from="AudioControls/SFXRow/SFXSlider" to="." method="_on_sfx_slider_value_changed"]
+diff --git a/2d/dodge_the_creeps/main.gd b/2d/dodge_the_creeps/main.gd
+index bd74c2e..ab0d142 100644
+--- a/2d/dodge_the_creeps/main.gd
++++ b/2d/dodge_the_creeps/main.gd
+@@ -3,6 +3,19 @@ extends Node
+ @export var mob_scene: PackedScene
+ var score
+ 
++func _ready() -> void:
++	_ensure_audio_bus("BGM")
++	_ensure_audio_bus("SFX")
++
++
++func _ensure_audio_bus(bus_name: String) -> void:
++	if AudioServer.get_bus_index(bus_name) >= 0:
++		return
++	AudioServer.add_bus()
++	var bus_index := AudioServer.bus_count - 1
++	AudioServer.set_bus_name(bus_index, bus_name)
++	AudioServer.set_bus_send(bus_index, "Master")
++
+ func game_over():
+ 	$ScoreTimer.stop()
+ 	$MobTimer.stop()
+diff --git a/2d/dodge_the_creeps/main.tscn b/2d/dodge_the_creeps/main.tscn
+index c84519c..4016720 100644
+--- a/2d/dodge_the_creeps/main.tscn
++++ b/2d/dodge_the_creeps/main.tscn
+@@ -48,9 +48,11 @@ curve = SubResource("1")
+ 
+ [node name="Music" type="AudioStreamPlayer" parent="." unique_id=267371681]
+ stream = ExtResource("5_55d8h")
++bus = "BGM"
+ 
+ [node name="DeathSound" type="AudioStreamPlayer" parent="." unique_id=1715684712]
+ stream = ExtResource("6_hp1r0")
++bus = "SFX"
+ 
+ [connection signal="hit" from="Player" to="." method="game_over"]
+ [connection signal="timeout" from="MobTimer" to="." method="_on_MobTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..45a91f7
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,29 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var bgm_index := AudioServer.get_bus_index("BGM")
++	var sfx_index := AudioServer.get_bus_index("SFX")
++	assert(bgm_index >= 0 and sfx_index >= 0 and bgm_index != sfx_index, "independent BGM and SFX buses exist")
++	assert(main.get_node("Music").bus == "BGM", "music routes to BGM bus")
++	assert(main.get_node("DeathSound").bus == "SFX", "death sound routes to SFX bus")
++	var hud := main.get_node("HUD")
++	var music_slider := hud.get_node("AudioControls/MusicRow/MusicSlider") as HSlider
++	var sfx_slider := hud.get_node("AudioControls/SFXRow/SFXSlider") as HSlider
++	assert(music_slider != null and sfx_slider != null, "separate music and SFX controls exist")
++	music_slider.value = 50.0
++	var music_db := AudioServer.get_bus_volume_db(bgm_index)
++	assert(is_equal_approx(music_db, linear_to_db(0.5)), "music slider sets BGM level")
++	sfx_slider.value = 25.0
++	var sfx_db := AudioServer.get_bus_volume_db(sfx_index)
++	assert(is_equal_approx(sfx_db, linear_to_db(0.25)), "SFX slider sets SFX level")
++	assert(is_equal_approx(AudioServer.get_bus_volume_db(bgm_index), music_db), "SFX control does not change music")
++	assert(hud.get_node("ButtonSound").bus == "SFX", "button feedback routes to SFX")
++	assert(main.get_node("Player") != null, "player remains in game scene")
++	print("PASS: 8 audio-control and regression assertions")
++	quit(0)

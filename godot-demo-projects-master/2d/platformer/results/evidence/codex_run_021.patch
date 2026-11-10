@@ -1,0 +1,227 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..0b7a23b 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,47 @@
+ extends CanvasLayer
+ 
+ signal start_game
++@onready var spawn_warning := $SpawnWarning as PanelContainer
++@onready var spawn_arrow := $SpawnWarning/Arrow as Label
++@onready var warning_flash_timer := $WarningFlashTimer as Timer
++@onready var warning_timer := $WarningTimer as Timer
++
++func show_spawn_warning(world_position: Vector2) -> void:
++	var viewport_size := get_viewport().get_visible_rect().size
++	var direction := world_position - viewport_size / 2.0
++	var position := Vector2.ZERO
++	if absf(direction.x) >= absf(direction.y):
++		if direction.x < 0.0:
++			spawn_arrow.text = "<"
++			position = Vector2(4.0, clampf(world_position.y - 24.0, 4.0, viewport_size.y - 52.0))
++		else:
++			spawn_arrow.text = ">"
++			position = Vector2(viewport_size.x - 52.0, clampf(world_position.y - 24.0, 4.0, viewport_size.y - 52.0))
++	else:
++		if direction.y < 0.0:
++			spawn_arrow.text = "^"
++			position = Vector2(clampf(world_position.x - 24.0, 4.0, viewport_size.x - 52.0), 4.0)
++		else:
++			spawn_arrow.text = "v"
++			position = Vector2(clampf(world_position.x - 24.0, 4.0, viewport_size.x - 52.0), viewport_size.y - 52.0)
++	spawn_warning.position = position
++	spawn_warning.show()
++	warning_flash_timer.start()
++	warning_timer.start()
++
++
++func hide_spawn_warning() -> void:
++	warning_timer.stop()
++	warning_flash_timer.stop()
++	spawn_warning.hide()
++
++
++func _on_warning_flash_timeout() -> void:
++	spawn_warning.visible = not spawn_warning.visible
++
++
++func _on_warning_timer_timeout() -> void:
++	hide_spawn_warning()
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..d79647e 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -9,6 +9,14 @@ action = &"start_game"
+ [sub_resource type="Shortcut" id="4"]
+ events = [SubResource("InputEventAction_fopy7")]
+ 
++[sub_resource type="StyleBoxFlat" id="SpawnWarningStyle"]
++bg_color = Color(0.05, 0.05, 0.05, 0.95)
++border_width_left = 3
++border_width_top = 3
++border_width_right = 3
++border_width_bottom = 3
++border_color = Color(1, 0.9, 0.1, 1)
++
+ [node name="HUD" type="CanvasLayer" unique_id=126421993]
+ script = ExtResource("1")
+ 
+@@ -57,5 +65,28 @@ text = "Start"
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
++[node name="SpawnWarning" type="PanelContainer" parent="."]
++visible = false
++offset_right = 48.0
++offset_bottom = 48.0
++theme_override_styles/panel = SubResource("SpawnWarningStyle")
++
++[node name="Arrow" type="Label" parent="SpawnWarning"]
++layout_mode = 2
++theme_override_colors/font_color = Color(1, 0.9, 0.1, 1)
++theme_override_font_sizes/font_size = 36
++text = "!"
++horizontal_alignment = 1
++vertical_alignment = 1
++
++[node name="WarningFlashTimer" type="Timer" parent="."]
++wait_time = 0.12
++
++[node name="WarningTimer" type="Timer" parent="."]
++wait_time = 0.3
++one_shot = true
++
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
++[connection signal="timeout" from="WarningFlashTimer" to="." method="_on_warning_flash_timeout"]
++[connection signal="timeout" from="WarningTimer" to="." method="_on_warning_timer_timeout"]
+diff --git a/2d/dodge_the_creeps/main.gd b/2d/dodge_the_creeps/main.gd
+index bd74c2e..d9aa4d5 100644
+--- a/2d/dodge_the_creeps/main.gd
++++ b/2d/dodge_the_creeps/main.gd
+@@ -2,16 +2,22 @@ extends Node
+ 
+ @export var mob_scene: PackedScene
+ var score
++var _pending_spawn_position := Vector2.ZERO
++var _pending_spawn_direction := 0.0
+ 
+ func game_over():
+ 	$ScoreTimer.stop()
+ 	$MobTimer.stop()
++	$SpawnWarningTimer.stop()
++	$HUD.hide_spawn_warning()
+ 	$HUD.show_game_over()
+ 	$Music.stop()
+ 	$DeathSound.play()
+ 
+ 
+ func new_game():
++	$SpawnWarningTimer.stop()
++	$HUD.hide_spawn_warning()
+ 	get_tree().call_group(&"mobs", &"queue_free")
+ 	score = 0
+ 	$Player.start($StartPosition.position)
+@@ -22,29 +28,22 @@ func new_game():
+ 
+ 
+ func _on_MobTimer_timeout():
+-	# Create a new instance of the Mob scene.
+-	var mob = mob_scene.instantiate()
+-
+-	# Choose a random location on Path2D.
+ 	var mob_spawn_location = get_node(^"MobPath/MobSpawnLocation")
+ 	mob_spawn_location.progress_ratio = randf()
++	_pending_spawn_position = mob_spawn_location.position
++	_pending_spawn_direction = mob_spawn_location.rotation + PI / 2 + randf_range(-PI / 4, PI / 4)
++	$HUD.show_spawn_warning(mob_spawn_location.global_position)
++	$SpawnWarningTimer.start()
+ 
+-	# Set the mob's position to a random location.
+-	mob.position = mob_spawn_location.position
+-
+-	# Set the mob's direction perpendicular to the path direction.
+-	var direction = mob_spawn_location.rotation + PI / 2
+ 
+-	# Add some randomness to the direction.
+-	direction += randf_range(-PI / 4, PI / 4)
+-	mob.rotation = direction
+-
+-	# Choose the velocity for the mob.
++func _on_SpawnWarningTimer_timeout() -> void:
++	var mob = mob_scene.instantiate()
++	mob.position = _pending_spawn_position
++	mob.rotation = _pending_spawn_direction
+ 	var velocity = Vector2(randf_range(150.0, 250.0), 0.0)
+-	mob.linear_velocity = velocity.rotated(direction)
+-
+-	# Spawn the mob by adding it to the Main scene.
++	mob.linear_velocity = velocity.rotated(_pending_spawn_direction)
+ 	add_child(mob)
++	$HUD.hide_spawn_warning()
+ 
+ 
+ func _on_ScoreTimer_timeout():
+diff --git a/2d/dodge_the_creeps/main.tscn b/2d/dodge_the_creeps/main.tscn
+index c84519c..2a1eae1 100644
+--- a/2d/dodge_the_creeps/main.tscn
++++ b/2d/dodge_the_creeps/main.tscn
+@@ -30,6 +30,10 @@ color = Color(0.219608, 0.372549, 0.380392, 1)
+ [node name="MobTimer" type="Timer" parent="." unique_id=228987391]
+ wait_time = 0.5
+ 
++[node name="SpawnWarningTimer" type="Timer" parent="."]
++wait_time = 0.3
++one_shot = true
++
+ [node name="ScoreTimer" type="Timer" parent="." unique_id=451982858]
+ 
+ [node name="StartTimer" type="Timer" parent="." unique_id=238316384]
+@@ -54,6 +58,7 @@ stream = ExtResource("6_hp1r0")
+ 
+ [connection signal="hit" from="Player" to="." method="game_over"]
+ [connection signal="timeout" from="MobTimer" to="." method="_on_MobTimer_timeout"]
++[connection signal="timeout" from="SpawnWarningTimer" to="." method="_on_SpawnWarningTimer_timeout"]
+ [connection signal="timeout" from="ScoreTimer" to="." method="_on_ScoreTimer_timeout"]
+ [connection signal="timeout" from="StartTimer" to="." method="_on_StartTimer_timeout"]
+ [connection signal="start_game" from="HUD" to="." method="new_game"]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..2aeb4d6
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,31 @@
++extends SceneTree
++
++func count_mobs(main: Node) -> int:
++	return main.find_children("*", "RigidBody2D", true, false).size()
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud := main.get_node("HUD")
++	var indicator := hud.get_node("SpawnWarning") as PanelContainer
++	var before := count_mobs(main)
++	main.call("_on_MobTimer_timeout")
++	assert(indicator.visible, "warning appears before mob enters")
++	assert(hud.get_node("WarningFlashTimer").time_left > 0.0, "border indicator flashes")
++	assert(main.get_node("SpawnWarningTimer").time_left > 0.0, "mob waits for warning interval")
++	assert(count_mobs(main) == before, "mob is not spawned immediately")
++	var arrow := hud.get_node("SpawnWarning/Arrow") as Label
++	assert(["<", ">", "^", "v"].has(arrow.text), "directional arrow points toward spawn edge")
++	assert(indicator.position.x <= 4.0 or indicator.position.x >= 428.0 or indicator.position.y <= 4.0 or indicator.position.y >= 668.0, "indicator is on viewport border")
++	await create_timer(0.36).timeout
++	assert(count_mobs(main) == before + 1, "mob enters after warning delay")
++	assert(not indicator.visible, "warning hides when mob spawns")
++	var mobs := main.find_children("*", "RigidBody2D", true, false)
++	assert(mobs[0].linear_velocity.length() >= 150.0 and mobs[0].linear_velocity.length() <= 250.0, "baseline mob speed preserved")
++	assert(main.get_node("Player").speed == 400, "player speed preserved")
++	print("PASS: 10 incoming-mob indicator and regression assertions")
++	quit(0)

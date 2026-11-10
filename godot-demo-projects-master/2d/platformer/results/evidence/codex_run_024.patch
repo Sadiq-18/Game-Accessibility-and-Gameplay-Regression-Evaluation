@@ -1,0 +1,146 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..8681f92 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,18 @@
+ extends CanvasLayer
+ 
+ signal start_game
++@onready var caption_panel := $CaptionPanel as PanelContainer
++@onready var caption_label := $CaptionPanel/CaptionLabel as Label
++@onready var caption_timer := $CaptionTimer as Timer
++
++func show_caption(text: String) -> void:
++	caption_label.text = text
++	caption_panel.show()
++	caption_timer.start()
++
++
++func _on_caption_timer_timeout() -> void:
++	caption_panel.hide()
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..0da0b73 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -9,6 +9,18 @@ action = &"start_game"
+ [sub_resource type="Shortcut" id="4"]
+ events = [SubResource("InputEventAction_fopy7")]
+ 
++[sub_resource type="StyleBoxFlat" id="CaptionPanelStyle"]
++bg_color = Color(0.02, 0.02, 0.02, 0.94)
++border_width_left = 2
++border_width_top = 2
++border_width_right = 2
++border_width_bottom = 2
++border_color = Color(1, 1, 1, 1)
++content_margin_left = 10.0
++content_margin_top = 4.0
++content_margin_right = 10.0
++content_margin_bottom = 4.0
++
+ [node name="HUD" type="CanvasLayer" unique_id=126421993]
+ script = ExtResource("1")
+ 
+@@ -57,5 +69,31 @@ text = "Start"
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
++[node name="CaptionPanel" type="PanelContainer" parent="."]
++visible = false
++anchors_preset = 7
++anchor_left = 0.5
++anchor_top = 1.0
++anchor_right = 0.5
++anchor_bottom = 1.0
++offset_left = -175.0
++offset_top = -76.0
++offset_right = 175.0
++offset_bottom = -24.0
++grow_horizontal = 2
++theme_override_styles/panel = SubResource("CaptionPanelStyle")
++
++[node name="CaptionLabel" type="Label" parent="CaptionPanel"]
++layout_mode = 2
++theme_override_colors/font_color = Color(1, 1, 1, 1)
++theme_override_font_sizes/font_size = 24
++horizontal_alignment = 1
++vertical_alignment = 1
++
++[node name="CaptionTimer" type="Timer" parent="."]
++wait_time = 1.8
++one_shot = true
++
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
++[connection signal="timeout" from="CaptionTimer" to="." method="_on_caption_timer_timeout"]
+diff --git a/2d/dodge_the_creeps/main.gd b/2d/dodge_the_creeps/main.gd
+index bd74c2e..f393ec9 100644
+--- a/2d/dodge_the_creeps/main.gd
++++ b/2d/dodge_the_creeps/main.gd
+@@ -9,6 +9,7 @@ func game_over():
+ 	$HUD.show_game_over()
+ 	$Music.stop()
+ 	$DeathSound.play()
++	$HUD.show_caption("Death Sound")
+ 
+ 
+ func new_game():
+@@ -19,6 +20,7 @@ func new_game():
+ 	$HUD.update_score(score)
+ 	$HUD.show_message("Get Ready")
+ 	$Music.play()
++	$HUD.show_caption("Music Start")
+ 
+ 
+ func _on_MobTimer_timeout():
+@@ -50,6 +52,7 @@ func _on_MobTimer_timeout():
+ func _on_ScoreTimer_timeout():
+ 	score += 1
+ 	$HUD.update_score(score)
++	$HUD.show_caption("New Score: %d" % score)
+ 
+ 
+ func _on_StartTimer_timeout():
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..d7823d9
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,34 @@
++extends SceneTree
++
++func caption(hud: Node) -> String:
++	return hud.get_node("CaptionPanel/CaptionLabel").text
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud := main.get_node("HUD")
++	var panel := hud.get_node("CaptionPanel") as PanelContainer
++	assert(not panel.visible, "caption starts hidden")
++	main.call("new_game")
++	assert(main.get_node("Music").playing, "new game starts music")
++	assert(panel.visible and caption(hud) == "Music Start", "music-start event is captioned")
++	assert(hud.get_node("CaptionTimer").time_left > 0.0, "caption auto-dismiss timer runs")
++	main.get_node("StartTimer").stop()
++	main.get_node("MobTimer").stop()
++	main.get_node("ScoreTimer").stop()
++	main.call("_on_ScoreTimer_timeout")
++	assert(main.score == 1 and main.get_node("HUD/ScoreLabel").text == "1", "score increments as before")
++	assert(caption(hud) == "New Score: 1", "new-score event is captioned")
++	main.call("game_over")
++	assert(not main.get_node("Music").playing, "music stops on death")
++	assert(main.get_node("DeathSound").playing, "death sound is triggered")
++	assert(panel.visible and caption(hud) == "Death Sound", "death-sound event is captioned")
++	hud.call("_on_caption_timer_timeout")
++	assert(not panel.visible, "caption timer hides presentation")
++	assert(main.get_node("Player").get_node("CollisionShape2D") != null, "player collision remains intact")
++	print("PASS: 10 caption and regression assertions")
++	quit(0)

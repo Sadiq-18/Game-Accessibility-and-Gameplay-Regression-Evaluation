@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://level/caption_overlay.gd" id="1_caption_script"]
+
+[sub_resource type="StyleBoxFlat" id="CaptionPanelStyle"]
+bg_color = Color(0, 0, 0, 0.9)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+
+[node name="CaptionOverlay" type="CanvasLayer" groups=["captions"]]
+layer = 120
+script = ExtResource("1_caption_script")
+
+[node name="CaptionPanel" type="PanelContainer" parent="."]
+visible = false
+anchors_preset = 10
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -140.0
+offset_top = -62.0
+offset_right = 140.0
+offset_bottom = -16.0
+grow_horizontal = 2
+theme_override_styles/panel = SubResource("CaptionPanelStyle")
+
+[node name="CaptionLabel" type="Label" parent="CaptionPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 1.8
+one_shot = true
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

@@ -1,0 +1,146 @@
+diff --git a/2d/platformer/gui/pause_menu.gd b/2d/platformer/gui/pause_menu.gd
+index a89c899..3093730 100644
+--- a/2d/platformer/gui/pause_menu.gd
++++ b/2d/platformer/gui/pause_menu.gd
+@@ -8,10 +8,55 @@ extends Control
+ @onready var center_cont := $ColorRect/CenterContainer as CenterContainer
+ @onready var resume_button := center_cont.get_node(^"VBoxContainer/ResumeButton") as Button
+ @onready var coins_counter := $ColorRect/CoinsCounter as CoinsCounter
++@onready var gamepad_jump_button := center_cont.get_node(^"VBoxContainer/GamepadRemap/JumpButton") as Button
++@onready var gamepad_shoot_button := center_cont.get_node(^"VBoxContainer/GamepadRemap/ShootButton") as Button
++
++const GAMEPAD_ACTIONS := ["jump", "shoot"]
++var awaiting_gamepad_action := ""
+ 
+ 
+ func _ready() -> void:
+ 	hide()
++	_update_gamepad_buttons()
++	set_process_unhandled_input(true)
++
++
++func _on_gamepad_remap_pressed(action: String) -> void:
++	if action not in GAMEPAD_ACTIONS:
++		return
++	awaiting_gamepad_action = action
++	_gamepad_button(action).text = "%s: press a controller button" % action.capitalize()
++
++
++func _unhandled_input(event: InputEvent) -> void:
++	if awaiting_gamepad_action.is_empty() or not event is InputEventJoypadButton or not event.pressed:
++		return
++	var action := awaiting_gamepad_action
++	for existing in InputMap.action_get_events(action):
++		if existing is InputEventJoypadButton:
++			InputMap.action_erase_event(action, existing)
++	InputMap.action_add_event(action, event.duplicate())
++	awaiting_gamepad_action = ""
++	_update_gamepad_button(action)
++	get_viewport().set_input_as_handled()
++
++
++func _gamepad_button(action: String) -> Button:
++	return gamepad_jump_button if action == "jump" else gamepad_shoot_button
++
++
++func _update_gamepad_buttons() -> void:
++	for action in GAMEPAD_ACTIONS:
++		_update_gamepad_button(action)
++
++
++func _update_gamepad_button(action: String) -> void:
++	var label := "Not assigned"
++	for event in InputMap.action_get_events(action):
++		if event is InputEventJoypadButton:
++			label = "Button %d" % (event.button_index + 1)
++			break
++	_gamepad_button(action).text = "%s controller button: %s" % [action.capitalize(), label]
+ 
+ 
+ func close() -> void:
+diff --git a/2d/platformer/gui/pause_menu.tscn b/2d/platformer/gui/pause_menu.tscn
+index bd79e7b..2e89685 100644
+--- a/2d/platformer/gui/pause_menu.tscn
++++ b/2d/platformer/gui/pause_menu.tscn
+@@ -49,6 +49,18 @@ layout_mode = 2
+ size_flags_horizontal = 4
+ text = "Resume"
+ 
++[node name="GamepadRemap" type="VBoxContainer" parent="ColorRect/CenterContainer/VBoxContainer"]
++layout_mode = 2
++size_flags_horizontal = 4
++
++[node name="JumpButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/GamepadRemap"]
++layout_mode = 2
++text = "Jump controller button"
++
++[node name="ShootButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/GamepadRemap"]
++layout_mode = 2
++text = "Shoot controller button"
++
+ [node name="QuitButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer" unique_id=2134735849]
+ layout_mode = 2
+ size_flags_horizontal = 4
+@@ -62,4 +74,6 @@ offset_right = 105.0
+ offset_bottom = 50.0
+ 
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/ResumeButton" to="." method="_on_resume_button_pressed"]
++[connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/GamepadRemap/JumpButton" to="." method="_on_gamepad_remap_pressed" binds= ["jump"]]
++[connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/GamepadRemap/ShootButton" to="." method="_on_gamepad_remap_pressed" binds= ["shoot"]]
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+diff --git a/2d/platformer/tests/agent_run_check.gd b/2d/platformer/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..5ba8e08
+--- /dev/null
++++ b/2d/platformer/tests/agent_run_check.gd
+@@ -0,0 +1,50 @@
++extends SceneTree
++
++func has_pad_button(action: String, button_index: int) -> bool:
++	for event in InputMap.action_get_events(action):
++		if event is InputEventJoypadButton and event.button_index == button_index:
++			return true
++	return false
++
++func has_keyboard(action: String) -> bool:
++	for event in InputMap.action_get_events(action):
++		if event is InputEventKey:
++			return true
++	return false
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var game: Node = load("res://game_singleplayer.tscn").instantiate()
++	root.add_child(game)
++	await process_frame
++	var menu: Control = game.get_node("InterfaceLayer/PauseMenu")
++	var jump_button := menu.get_node("ColorRect/CenterContainer/VBoxContainer/GamepadRemap/JumpButton") as Button
++	var shoot_button := menu.get_node("ColorRect/CenterContainer/VBoxContainer/GamepadRemap/ShootButton") as Button
++	assert(has_pad_button("jump", 0), "baseline jump gamepad mapping exists")
++	assert(has_keyboard("jump"), "keyboard jump mapping exists")
++	menu.call("_on_gamepad_remap_pressed", "jump")
++	assert(jump_button.text.contains("press a controller button"), "jump enters capture mode")
++	var jump_event := InputEventJoypadButton.new()
++	jump_event.button_index = JOY_BUTTON_X
++	jump_event.pressed = true
++	menu.call("_unhandled_input", jump_event)
++	assert(has_pad_button("jump", JOY_BUTTON_X), "jump controller mapping updated")
++	assert(has_keyboard("jump"), "keyboard jump mapping preserved")
++	assert(jump_button.text.contains("Button 3"), "jump mapping shown in UI")
++	Input.parse_input_event(jump_event)
++	await process_frame
++	assert(Input.is_action_pressed("jump"), "new jump button triggers action")
++	Input.action_release("jump")
++	menu.call("_on_gamepad_remap_pressed", "shoot")
++	var shoot_event := InputEventJoypadButton.new()
++	shoot_event.button_index = JOY_BUTTON_Y
++	shoot_event.pressed = true
++	menu.call("_unhandled_input", shoot_event)
++	assert(has_pad_button("shoot", JOY_BUTTON_Y), "shoot controller mapping updated")
++	assert(has_keyboard("shoot"), "keyboard shoot mapping preserved")
++	assert(shoot_button.text.contains("Button 4"), "shoot mapping shown in UI")
++	assert(game.get_node("Level/Player").collision_mask == 30, "player collision mask preserved")
++	print("PASS: 10 controller-remap and regression assertions")
++	quit(0)

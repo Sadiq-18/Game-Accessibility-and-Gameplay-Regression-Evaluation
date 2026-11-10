@@ -1,0 +1,188 @@
+diff --git a/2d/role_playing_game/default_bus_layout.tres b/2d/role_playing_game/default_bus_layout.tres
+new file mode 100644
+index 0000000..dae5b42
+--- /dev/null
++++ b/2d/role_playing_game/default_bus_layout.tres
+@@ -0,0 +1,27 @@
++[gd_resource type="AudioBusLayout" format=3]
++
++[resource]
++bus/0/name = "Master"
++bus/0/solo = false
++bus/0/mute = false
++bus/0/bypass_fx = false
++bus/0/volume_db = 0.0
++bus/0/send = ""
++bus/1/name = "Background Music"
++bus/1/solo = false
++bus/1/mute = false
++bus/1/bypass_fx = false
++bus/1/volume_db = 0.0
++bus/1/send = "Master"
++bus/2/name = "Battle Audio"
++bus/2/solo = false
++bus/2/mute = false
++bus/2/bypass_fx = false
++bus/2/volume_db = 0.0
++bus/2/send = "Master"
++bus/3/name = "Interface SFX"
++bus/3/solo = false
++bus/3/mute = false
++bus/3/bypass_fx = false
++bus/3/volume_db = 0.0
++bus/3/send = "Master"
+diff --git a/2d/role_playing_game/game.tscn b/2d/role_playing_game/game.tscn
+index 6fd0635..e0cdea9 100644
+--- a/2d/role_playing_game/game.tscn
++++ b/2d/role_playing_game/game.tscn
+@@ -3,6 +3,7 @@
+ [ext_resource type="Script" uid="uid://2a62dnfq4o1b" path="res://game.gd" id="1"]
+ [ext_resource type="PackedScene" uid="uid://cx5dvchcc2v3b" path="res://combat/combat.tscn" id="2"]
+ [ext_resource type="PackedScene" uid="uid://dtaj2nc2g4cb8" path="res://grid_movement/exploration.tscn" id="3"]
++[ext_resource type="PackedScene" path="res://menus/options_menu.tscn" id="4_audio_options"]
+ 
+ [sub_resource type="Animation" id="1"]
+ length = 0.5
+@@ -48,3 +49,5 @@ visible = false
+ 
+ [node name="Camera2D" type="Camera2D" parent="." unique_id=1887632648]
+ offset = Vector2(640, 360)
++
++[node name="AudioOptions" parent="." instance=ExtResource("4_audio_options")]
+diff --git a/2d/role_playing_game/menus/options_menu.gd b/2d/role_playing_game/menus/options_menu.gd
+new file mode 100644
+index 0000000..a98ee50
+--- /dev/null
++++ b/2d/role_playing_game/menus/options_menu.gd
+@@ -0,0 +1,8 @@
++extends CanvasLayer
++
++func _on_bus_volume_changed(value: float, bus_name: String) -> void:
++	var bus_index := AudioServer.get_bus_index(bus_name)
++	if bus_index < 0:
++		return
++	var linear_gain := value / 100.0
++	AudioServer.set_bus_volume_db(bus_index, linear_to_db(maxf(linear_gain, 0.0001)))
+diff --git a/2d/role_playing_game/menus/options_menu.tscn b/2d/role_playing_game/menus/options_menu.tscn
+new file mode 100644
+index 0000000..589f8b7
+--- /dev/null
++++ b/2d/role_playing_game/menus/options_menu.tscn
+@@ -0,0 +1,77 @@
++[gd_scene format=3]
++
++[ext_resource type="Script" path="res://menus/options_menu.gd" id="1_audio_options"]
++
++[node name="AudioOptions" type="CanvasLayer"]
++script = ExtResource("1_audio_options")
++
++[node name="AudioPanel" type="PanelContainer" parent="."]
++offset_left = 18.0
++offset_top = 18.0
++offset_right = 388.0
++offset_bottom = 225.0
++
++[node name="Margin" type="MarginContainer" parent="AudioPanel"]
++layout_mode = 2
++theme_override_constants/margin_left = 12
++theme_override_constants/margin_top = 10
++theme_override_constants/margin_right = 12
++theme_override_constants/margin_bottom = 10
++
++[node name="Controls" type="VBoxContainer" parent="AudioPanel/Margin"]
++layout_mode = 2
++theme_override_constants/separation = 6
++
++[node name="Title" type="Label" parent="AudioPanel/Margin/Controls"]
++layout_mode = 2
++text = "Audio Levels"
++horizontal_alignment = 1
++
++[node name="MusicRow" type="HBoxContainer" parent="AudioPanel/Margin/Controls"]
++layout_mode = 2
++
++[node name="MusicLabel" type="Label" parent="AudioPanel/Margin/Controls/MusicRow"]
++custom_minimum_size = Vector2(125, 0)
++layout_mode = 2
++text = "Background Music"
++
++[node name="MusicSlider" type="HSlider" parent="AudioPanel/Margin/Controls/MusicRow"]
++custom_minimum_size = Vector2(190, 0)
++layout_mode = 2
++size_flags_horizontal = 3
++max_value = 100.0
++value = 100.0
++
++[node name="BattleRow" type="HBoxContainer" parent="AudioPanel/Margin/Controls"]
++layout_mode = 2
++
++[node name="BattleLabel" type="Label" parent="AudioPanel/Margin/Controls/BattleRow"]
++custom_minimum_size = Vector2(125, 0)
++layout_mode = 2
++text = "Battle Audio"
++
++[node name="BattleSlider" type="HSlider" parent="AudioPanel/Margin/Controls/BattleRow"]
++custom_minimum_size = Vector2(190, 0)
++layout_mode = 2
++size_flags_horizontal = 3
++max_value = 100.0
++value = 100.0
++
++[node name="InterfaceRow" type="HBoxContainer" parent="AudioPanel/Margin/Controls"]
++layout_mode = 2
++
++[node name="InterfaceLabel" type="Label" parent="AudioPanel/Margin/Controls/InterfaceRow"]
++custom_minimum_size = Vector2(125, 0)
++layout_mode = 2
++text = "Interface SFX"
++
++[node name="InterfaceSlider" type="HSlider" parent="AudioPanel/Margin/Controls/InterfaceRow"]
++custom_minimum_size = Vector2(190, 0)
++layout_mode = 2
++size_flags_horizontal = 3
++max_value = 100.0
++value = 100.0
++
++[connection signal="value_changed" from="AudioPanel/Margin/Controls/MusicRow/MusicSlider" to="." method="_on_bus_volume_changed" binds= ["Background Music"]]
++[connection signal="value_changed" from="AudioPanel/Margin/Controls/BattleRow/BattleSlider" to="." method="_on_bus_volume_changed" binds= ["Battle Audio"]]
++[connection signal="value_changed" from="AudioPanel/Margin/Controls/InterfaceRow/InterfaceSlider" to="." method="_on_bus_volume_changed" binds= ["Interface SFX"]]
+diff --git a/2d/role_playing_game/tests/agent_run_check.gd b/2d/role_playing_game/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..0c09f39
+--- /dev/null
++++ b/2d/role_playing_game/tests/agent_run_check.gd
+@@ -0,0 +1,34 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var game: Node = load("res://game.tscn").instantiate()
++	root.add_child(game)
++	await process_frame
++	var buses := ["Background Music", "Battle Audio", "Interface SFX"]
++	var indices: Array[int] = []
++	for bus_name in buses:
++		indices.append(AudioServer.get_bus_index(bus_name))
++	assert(indices.all(func(index: int) -> bool: return index >= 0), "three named audio buses load")
++	assert(indices[0] != indices[1] and indices[1] != indices[2] and indices[0] != indices[2], "audio buses are distinct")
++	var options := game.get_node("AudioOptions")
++	var music := options.get_node("AudioPanel/Margin/Controls/MusicRow/MusicSlider") as HSlider
++	var battle := options.get_node("AudioPanel/Margin/Controls/BattleRow/BattleSlider") as HSlider
++	var interface_sfx := options.get_node("AudioPanel/Margin/Controls/InterfaceRow/InterfaceSlider") as HSlider
++	music.value = 50.0
++	var music_db := AudioServer.get_bus_volume_db(indices[0])
++	assert(is_equal_approx(music_db, linear_to_db(0.5)), "background music level updates")
++	battle.value = 25.0
++	assert(is_equal_approx(AudioServer.get_bus_volume_db(indices[1]), linear_to_db(0.25)), "battle level updates independently")
++	assert(is_equal_approx(AudioServer.get_bus_volume_db(indices[0]), music_db), "battle change preserves music level")
++	interface_sfx.value = 75.0
++	assert(is_equal_approx(AudioServer.get_bus_volume_db(indices[2]), linear_to_db(0.75)), "interface SFX level updates independently")
++	music.value = 0.0
++	assert(is_equal_approx(AudioServer.get_bus_volume_db(indices[0]), -80.0), "zero slider mutes its channel")
++	assert(AudioServer.get_bus_send(indices[0]) == "Master", "music bus routes to master")
++	var players := game.find_children("*", "AudioStreamPlayer", true, false)
++	assert(game.get_node("Exploration/Grid/Player") != null, "exploration scene remains present")
++	print("PASS: 9 audio routing and configuration checks; audio players in game: %d" % players.size())
++	quit(0)

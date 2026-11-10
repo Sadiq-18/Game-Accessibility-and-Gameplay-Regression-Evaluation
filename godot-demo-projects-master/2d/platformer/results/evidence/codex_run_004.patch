@@ -1,0 +1,243 @@
+diff --git a/2d/platformer/default_bus_layout.tres b/2d/platformer/default_bus_layout.tres
+index 74dd923..4d6dc46 100644
+--- a/2d/platformer/default_bus_layout.tres
++++ b/2d/platformer/default_bus_layout.tres
+@@ -2,3 +2,15 @@
+ 
+ [resource]
+ bus/0/volume_db = -11.9576
++bus/1/name = "Music"
++bus/1/solo = false
++bus/1/mute = false
++bus/1/bypass_fx = false
++bus/1/volume_db = 0.0
++bus/1/send = "Master"
++bus/2/name = "SFX"
++bus/2/solo = false
++bus/2/mute = false
++bus/2/bypass_fx = false
++bus/2/volume_db = 0.0
++bus/2/send = "Master"
+diff --git a/2d/platformer/enemy/enemy.tscn b/2d/platformer/enemy/enemy.tscn
+index 920d78a..76333ca 100644
+--- a/2d/platformer/enemy/enemy.tscn
++++ b/2d/platformer/enemy/enemy.tscn
+@@ -301,7 +301,9 @@ gravity = Vector2(0, -250)
+ color_ramp = SubResource("7")
+ 
+ [node name="Hit" type="AudioStreamPlayer2D" parent="." unique_id=1791067492]
++bus = "SFX"
+ stream = ExtResource("3")
+ 
+ [node name="Explode" type="AudioStreamPlayer2D" parent="." unique_id=453738939]
++bus = "SFX"
+ stream = ExtResource("2")
+diff --git a/2d/platformer/gui/pause_menu.gd b/2d/platformer/gui/pause_menu.gd
+index a89c899..caca1f5 100644
+--- a/2d/platformer/gui/pause_menu.gd
++++ b/2d/platformer/gui/pause_menu.gd
+@@ -5,13 +5,39 @@ extends Control
+ @export var fade_in_duration := 0.3
+ @export var fade_out_duration := 0.2
+ 
++const MUTE_BUSES := ["Master", "Music", "SFX"]
++static var muted_buses: Dictionary = {"Master": false, "Music": false, "SFX": false}
++static var saved_bus_volume_db: Dictionary = {}
++
+ @onready var center_cont := $ColorRect/CenterContainer as CenterContainer
+ @onready var resume_button := center_cont.get_node(^"VBoxContainer/ResumeButton") as Button
++@onready var mute_controls := center_cont.get_node(^"VBoxContainer/MuteControls") as VBoxContainer
+ @onready var coins_counter := $ColorRect/CoinsCounter as CoinsCounter
+ 
+ 
+ func _ready() -> void:
+ 	hide()
++	for bus_name in MUTE_BUSES:
++		var index := AudioServer.get_bus_index(bus_name)
++		if index < 0:
++			continue
++		if not saved_bus_volume_db.has(bus_name):
++			saved_bus_volume_db[bus_name] = AudioServer.get_bus_volume_db(index)
++		AudioServer.set_bus_mute(index, bool(muted_buses.get(bus_name, false)))
++		var control := mute_controls.get_node(bus_name + "Mute") as CheckButton
++		control.button_pressed = bool(muted_buses.get(bus_name, false))
++
++
++func _on_bus_mute_toggled(is_muted: bool, bus_name: String) -> void:
++	var index := AudioServer.get_bus_index(bus_name)
++	if index < 0:
++		return
++	if is_muted and not bool(muted_buses.get(bus_name, false)):
++		saved_bus_volume_db[bus_name] = AudioServer.get_bus_volume_db(index)
++	AudioServer.set_bus_mute(index, is_muted)
++	muted_buses[bus_name] = is_muted
++	if not is_muted:
++		AudioServer.set_bus_volume_db(index, float(saved_bus_volume_db[bus_name]))
+ 
+ 
+ func close() -> void:
+diff --git a/2d/platformer/gui/pause_menu.tscn b/2d/platformer/gui/pause_menu.tscn
+index bd79e7b..29346fb 100644
+--- a/2d/platformer/gui/pause_menu.tscn
++++ b/2d/platformer/gui/pause_menu.tscn
+@@ -49,6 +49,22 @@ layout_mode = 2
+ size_flags_horizontal = 4
+ text = "Resume"
+ 
++[node name="MuteControls" type="VBoxContainer" parent="ColorRect/CenterContainer/VBoxContainer"]
++layout_mode = 2
++size_flags_horizontal = 4
++
++[node name="MasterMute" type="CheckButton" parent="ColorRect/CenterContainer/VBoxContainer/MuteControls"]
++layout_mode = 2
++text = "Mute Master"
++
++[node name="MusicMute" type="CheckButton" parent="ColorRect/CenterContainer/VBoxContainer/MuteControls"]
++layout_mode = 2
++text = "Mute Music"
++
++[node name="SFXMute" type="CheckButton" parent="ColorRect/CenterContainer/VBoxContainer/MuteControls"]
++layout_mode = 2
++text = "Mute SFX"
++
+ [node name="QuitButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer" unique_id=2134735849]
+ layout_mode = 2
+ size_flags_horizontal = 4
+@@ -62,4 +78,7 @@ offset_right = 105.0
+ offset_bottom = 50.0
+ 
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/ResumeButton" to="." method="_on_resume_button_pressed"]
++[connection signal="toggled" from="ColorRect/CenterContainer/VBoxContainer/MuteControls/MasterMute" to="." method="_on_bus_mute_toggled" binds= ["Master"]]
++[connection signal="toggled" from="ColorRect/CenterContainer/VBoxContainer/MuteControls/MusicMute" to="." method="_on_bus_mute_toggled" binds= ["Music"]]
++[connection signal="toggled" from="ColorRect/CenterContainer/VBoxContainer/MuteControls/SFXMute" to="." method="_on_bus_mute_toggled" binds= ["SFX"]]
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+diff --git a/2d/platformer/level/coin.tscn b/2d/platformer/level/coin.tscn
+index e35f8ef..7645040 100644
+--- a/2d/platformer/level/coin.tscn
++++ b/2d/platformer/level/coin.tscn
+@@ -183,5 +183,6 @@ autoplay = &"spinning"
+ shape = SubResource("3")
+ 
+ [node name="Pickup" type="AudioStreamPlayer2D" parent="." unique_id=469882844]
++bus = "SFX"
+ 
+ [connection signal="body_entered" from="." to="." method="_on_body_entered"]
+diff --git a/2d/platformer/music.tscn b/2d/platformer/music.tscn
+index 150eb62..6441977 100644
+--- a/2d/platformer/music.tscn
++++ b/2d/platformer/music.tscn
+@@ -6,4 +6,5 @@
+ process_mode = 1
+ stream = ExtResource("1_8pjkj")
+ volume_db = -3.0
++bus = "Music"
+ autoplay = true
+diff --git a/2d/platformer/player/player.tscn b/2d/platformer/player/player.tscn
+index 6108e1d..5a31252 100644
+--- a/2d/platformer/player/player.tscn
++++ b/2d/platformer/player/player.tscn
+@@ -212,6 +212,7 @@ position = Vector2(14, 1)
+ script = ExtResource("8")
+ 
+ [node name="Shoot" type="AudioStreamPlayer2D" parent="Sprite2D/Gun" unique_id=1036518396]
++bus = "SFX"
+ position = Vector2(-30.6589, -6.13176)
+ stream = ExtResource("6")
+ 
+@@ -236,6 +237,7 @@ position = Vector2(0, -14)
+ shape = SubResource("11")
+ 
+ [node name="Jump" type="AudioStreamPlayer2D" parent="." unique_id=2076416565]
++bus = "SFX"
+ stream = ExtResource("5")
+ volume_db = -3.0
+ 
+diff --git a/2d/platformer/tests/agent_run_check.gd b/2d/platformer/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..131d483
+--- /dev/null
++++ b/2d/platformer/tests/agent_run_check.gd
+@@ -0,0 +1,83 @@
++extends SceneTree
++
++var failures := 0
++
++
++func _initialize() -> void:
++	call_deferred("_run_checks")
++
++
++func _check(condition: bool, message: String) -> void:
++	if condition:
++		print("PASS: ", message)
++	else:
++		failures += 1
++		push_error("FAIL: " + message)
++
++
++func _run_checks() -> void:
++	var buses := ["Master", "Music", "SFX"]
++	var buses_exist := true
++	for bus_name in buses:
++		if AudioServer.get_bus_index(bus_name) < 0:
++			buses_exist = false
++	_check(buses_exist, "Master, Music, and SFX buses are available")
++	var menu := (load("res://gui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
++	root.add_child(menu)
++	await process_frame
++	var controls := {
++		"Master": menu.mute_controls.get_node("MasterMute") as CheckButton,
++		"Music": menu.mute_controls.get_node("MusicMute") as CheckButton,
++		"SFX": menu.mute_controls.get_node("SFXMute") as CheckButton,
++	}
++	_check(controls.size() == 3 and controls["Master"].visible and controls["Music"].visible and controls["SFX"].visible, "mute toggles for all three buses are visible")
++	var sfx_index := AudioServer.get_bus_index("SFX")
++	AudioServer.set_bus_volume_db(sfx_index, -7.0)
++	controls["SFX"].button_pressed = true
++	controls["SFX"].toggled.emit(true)
++	_check(AudioServer.is_bus_mute(sfx_index), "SFX mute toggle mutes the selected bus")
++	_check(is_equal_approx(AudioServer.get_bus_volume_db(sfx_index), -7.0), "muting preserves the prior SFX volume")
++	var music_index := AudioServer.get_bus_index("Music")
++	controls["Music"].button_pressed = true
++	controls["Music"].toggled.emit(true)
++	_check(AudioServer.is_bus_mute(music_index) and AudioServer.is_bus_mute(sfx_index), "Music and SFX mute independently")
++	controls["SFX"].button_pressed = false
++	controls["SFX"].toggled.emit(false)
++	_check(not AudioServer.is_bus_mute(sfx_index), "unmuting restores SFX output")
++	_check(is_equal_approx(AudioServer.get_bus_volume_db(sfx_index), -7.0), "unmuting restores the exact previous SFX volume")
++	var master_index := AudioServer.get_bus_index("Master")
++	controls["Master"].button_pressed = true
++	controls["Master"].toggled.emit(true)
++	_check(AudioServer.is_bus_mute(master_index) and AudioServer.is_bus_mute(music_index), "Master mute affects the full mix without clearing Music's mute state")
++	menu.queue_free()
++	await process_frame
++	var second_menu := (load("res://gui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
++	root.add_child(second_menu)
++	await process_frame
++	_check(second_menu.mute_controls.get_node("MasterMute").button_pressed, "mute preference persists into a new pause menu instance")
++	_check(AudioServer.is_bus_mute(master_index), "bus mute state persists across menu instances")
++	var game := (load("res://game_singleplayer.tscn") as PackedScene).instantiate() as Game
++	root.add_child(game)
++	var pause_event := InputEventAction.new()
++	pause_event.action = &"toggle_pause"
++	pause_event.pressed = true
++	game._unhandled_input(pause_event)
++	game._unhandled_input(pause_event)
++	_check(not paused and AudioServer.is_bus_mute(master_index), "pause/resume and muted audio state remain independent")
++	var player := game.get_node("Level/Player") as Player
++	await physics_frame
++	await physics_frame
++	player.position.y -= 100.0
++	player._double_jump_charged = true
++	await physics_frame
++	player.try_jump()
++	_check(player.velocity.y < 0.0, "jump/gameplay logic still runs while audio is muted")
++
++	if failures == 0:
++		print("RESULT: PASS; mute controls and selected gameplay regression checks passed.")
++	else:
++		print("RESULT: FAIL; ", failures, " check(s) failed.")
++	for child in root.get_children():
++		child.queue_free()
++	await process_frame
++	call_deferred("quit", 0 if failures == 0 else 1)

@@ -1,0 +1,106 @@
+diff --git a/2d/platformer/gui/pause_menu.gd b/2d/platformer/gui/pause_menu.gd
+index a89c899..29c9336 100644
+--- a/2d/platformer/gui/pause_menu.gd
++++ b/2d/platformer/gui/pause_menu.gd
+@@ -8,10 +8,16 @@ extends Control
+ @onready var center_cont := $ColorRect/CenterContainer as CenterContainer
+ @onready var resume_button := center_cont.get_node(^"VBoxContainer/ResumeButton") as Button
+ @onready var coins_counter := $ColorRect/CoinsCounter as CoinsCounter
++@onready var auto_fire_button := $ColorRect/CenterContainer/VBoxContainer/AutoFireButton as CheckButton
+ 
+ 
+ func _ready() -> void:
+ 	hide()
++	auto_fire_button.button_pressed = Engine.get_meta("gab_auto_fire", false)
++
++
++func _on_auto_fire_toggled(enabled: bool) -> void:
++	Engine.set_meta("gab_auto_fire", enabled)
+ 
+ 
+ func close() -> void:
+diff --git a/2d/platformer/gui/pause_menu.tscn b/2d/platformer/gui/pause_menu.tscn
+index bd79e7b..5792873 100644
+--- a/2d/platformer/gui/pause_menu.tscn
++++ b/2d/platformer/gui/pause_menu.tscn
+@@ -49,6 +49,11 @@ layout_mode = 2
+ size_flags_horizontal = 4
+ text = "Resume"
+ 
++[node name="AutoFireButton" type="CheckButton" parent="ColorRect/CenterContainer/VBoxContainer"]
++layout_mode = 2
++size_flags_horizontal = 4
++text = "Hold to auto-fire"
++
+ [node name="QuitButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer" unique_id=2134735849]
+ layout_mode = 2
+ size_flags_horizontal = 4
+@@ -62,4 +67,5 @@ offset_right = 105.0
+ offset_bottom = 50.0
+ 
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/ResumeButton" to="." method="_on_resume_button_pressed"]
++[connection signal="toggled" from="ColorRect/CenterContainer/VBoxContainer/AutoFireButton" to="." method="_on_auto_fire_toggled"]
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+diff --git a/2d/platformer/player/player.gd b/2d/platformer/player/player.gd
+index 306ad72..70e4686 100644
+--- a/2d/platformer/player/player.gd
++++ b/2d/platformer/player/player.gd
+@@ -48,7 +48,7 @@ func _physics_process(delta: float) -> void:
+ 	move_and_slide()
+ 
+ 	var is_shooting: bool = false
+-	if Input.is_action_just_pressed("shoot" + action_suffix):
++	if _shoot_input_active():
+ 		is_shooting = gun.shoot(sprite.scale.x)
+ 
+ 	var animation := get_new_animation(is_shooting)
+@@ -86,3 +86,10 @@ func try_jump() -> void:
+ 		return
+ 	velocity.y = JUMP_VELOCITY
+ 	jump_sound.play()
++
++
++func _shoot_input_active() -> bool:
++	var action := "shoot" + action_suffix
++	if Engine.get_meta("gab_auto_fire", false):
++		return Input.is_action_pressed(action)
++	return Input.is_action_just_pressed(action)
+diff --git a/2d/platformer/tests/agent_run_check.gd b/2d/platformer/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..7fa67e3
+--- /dev/null
++++ b/2d/platformer/tests/agent_run_check.gd
+@@ -0,0 +1,33 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func count_bullets(gun: Node) -> int:
++	var count := 0
++	for child in gun.get_children():
++		if child is Bullet:
++			count += 1
++	return count
++
++func run() -> void:
++	Engine.set_meta("gab_auto_fire", false)
++	var game: Node = load("res://game_singleplayer.tscn").instantiate()
++	root.add_child(game)
++	await process_frame
++	var player: Player = game.get_node("Level/Player")
++	var menu: PauseMenu = game.get_node("InterfaceLayer/PauseMenu")
++	assert(not Engine.get_meta("gab_auto_fire"), "auto-fire defaults off")
++	menu.call("_on_auto_fire_toggled", true)
++	assert(Engine.get_meta("gab_auto_fire"), "menu enables auto-fire")
++	Input.action_press("shoot")
++	await create_timer(1.0).timeout
++	Input.action_release("shoot")
++	var bullets := count_bullets(player.gun)
++	assert(bullets >= 2, "holding shoot generates repeated bullets")
++	assert(player.collision_mask == 30, "player collision mask preserved")
++	menu.call("_on_auto_fire_toggled", false)
++	assert(not Engine.get_meta("gab_auto_fire"), "auto-fire can be disabled")
++	assert(not Input.is_action_pressed("shoot"), "input released after trial")
++	print("PASS: 6 auto-fire and regression assertions; bullets observed: %d" % bullets)
++	quit(0)

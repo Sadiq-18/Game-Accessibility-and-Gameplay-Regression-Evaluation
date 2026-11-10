@@ -1,0 +1,273 @@
+diff --git a/2d/role_playing_game/combat/combat.tscn b/2d/role_playing_game/combat/combat.tscn
+index 579ea0d..91a52d3 100644
+--- a/2d/role_playing_game/combat/combat.tscn
++++ b/2d/role_playing_game/combat/combat.tscn
+@@ -888,6 +888,7 @@ script = ExtResource("4")
+ combatants_node = NodePath("../../Combatants")
+ info_scene = ExtResource("5")
+ 
++
+ [node name="Combatants" type="HBoxContainer" parent="CombatCanvas/UI" unique_id=660612596]
+ layout_mode = 0
+ offset_left = 20.0
+diff --git a/2d/role_playing_game/combat/interface/ui.gd b/2d/role_playing_game/combat/interface/ui.gd
+index 339f882..888cf3b 100644
+--- a/2d/role_playing_game/combat/interface/ui.gd
++++ b/2d/role_playing_game/combat/interface/ui.gd
+@@ -8,6 +8,7 @@ signal flee(winner: Combatant, loser: Combatant)
+ 
+ 
+ func initialize() -> void:
++	_apply_high_contrast(bool(Engine.get_meta("gab_high_contrast", false)))
+ 	for combatant in combatants_node.get_children():
+ 		var health := combatant.get_node(^"Health")
+ 		var info := info_scene.instantiate()
+@@ -21,6 +22,42 @@ func initialize() -> void:
+ 	$Buttons/GridContainer/Attack.grab_focus()
+ 
+ 
++func _apply_high_contrast(enabled: bool) -> void:
++	var panel := $Buttons as PanelContainer
++	var commands := $Buttons/GridContainer
++	if not enabled:
++		panel.remove_theme_stylebox_override("panel")
++		for button in commands.get_children():
++			button.remove_theme_stylebox_override("normal")
++			button.remove_theme_stylebox_override("hover")
++			button.remove_theme_stylebox_override("focus")
++			button.remove_theme_color_override("font_color")
++			button.remove_theme_color_override("font_hover_color")
++			button.remove_theme_color_override("font_focus_color")
++		return
++	var panel_style := StyleBoxFlat.new()
++	panel_style.bg_color = Color.BLACK
++	panel_style.border_color = Color.WHITE
++	panel_style.set_border_width_all(3)
++	panel.add_theme_stylebox_override("panel", panel_style)
++	for button in commands.get_children():
++		var normal := StyleBoxFlat.new()
++		normal.bg_color = Color.BLACK
++		normal.border_color = Color.WHITE
++		normal.set_border_width_all(2)
++		var hover := normal.duplicate() as StyleBoxFlat
++		hover.bg_color = Color(0.12, 0.12, 0.12)
++		var focus := normal.duplicate() as StyleBoxFlat
++		focus.border_color = Color.YELLOW
++		focus.set_border_width_all(5)
++		button.add_theme_stylebox_override("normal", normal)
++		button.add_theme_stylebox_override("hover", hover)
++		button.add_theme_stylebox_override("focus", focus)
++		button.add_theme_color_override("font_color", Color.WHITE)
++		button.add_theme_color_override("font_hover_color", Color.WHITE)
++		button.add_theme_color_override("font_focus_color", Color.WHITE)
++
++
+ func _on_Attack_button_up() -> void:
+ 	if not combatants_node.get_node(^"Player").active:
+ 		return
+diff --git a/2d/role_playing_game/dialogue/interface/interface.gd b/2d/role_playing_game/dialogue/interface/interface.gd
+index 9728060..dec103d 100644
+--- a/2d/role_playing_game/dialogue/interface/interface.gd
++++ b/2d/role_playing_game/dialogue/interface/interface.gd
+@@ -4,6 +4,36 @@ var dialogue_node: Node = null
+ 
+ func _ready() -> void:
+ 	visible = false
++	_apply_high_contrast(bool(Engine.get_meta("gab_high_contrast", false)))
++
++
++func _apply_high_contrast(enabled: bool) -> void:
++	var panel_style := StyleBoxFlat.new()
++	if enabled:
++		panel_style.bg_color = Color.BLACK
++		panel_style.border_color = Color.WHITE
++		panel_style.set_border_width_all(3)
++		$Panel2.add_theme_stylebox_override("panel", panel_style)
++		$Panel.add_theme_stylebox_override("panel", panel_style.duplicate())
++		$Name.add_theme_color_override("default_color", Color.WHITE)
++		$Text.add_theme_color_override("default_color", Color.WHITE)
++		var focus_style := StyleBoxFlat.new()
++		focus_style.bg_color = Color.BLACK
++		focus_style.border_color = Color.YELLOW
++		focus_style.set_border_width_all(4)
++		$Button.add_theme_stylebox_override("normal", panel_style.duplicate())
++		$Button.add_theme_stylebox_override("focus", focus_style)
++		$Button.add_theme_color_override("font_color", Color.WHITE)
++		$Button.add_theme_color_override("font_focus_color", Color.WHITE)
++	else:
++		$Panel2.remove_theme_stylebox_override("panel")
++		$Panel.remove_theme_stylebox_override("panel")
++		$Name.remove_theme_color_override("default_color")
++		$Text.remove_theme_color_override("default_color")
++		$Button.remove_theme_stylebox_override("normal")
++		$Button.remove_theme_stylebox_override("focus")
++		$Button.remove_theme_color_override("font_color")
++		$Button.remove_theme_color_override("font_focus_color")
+ 
+ 
+ func show_dialogue(player: Pawn, dialogue: Node) -> void:
+diff --git a/2d/role_playing_game/game.tscn b/2d/role_playing_game/game.tscn
+index 6fd0635..2174f39 100644
+--- a/2d/role_playing_game/game.tscn
++++ b/2d/role_playing_game/game.tscn
+@@ -3,6 +3,7 @@
+ [ext_resource type="Script" uid="uid://2a62dnfq4o1b" path="res://game.gd" id="1"]
+ [ext_resource type="PackedScene" uid="uid://cx5dvchcc2v3b" path="res://combat/combat.tscn" id="2"]
+ [ext_resource type="PackedScene" uid="uid://dtaj2nc2g4cb8" path="res://grid_movement/exploration.tscn" id="3"]
++[ext_resource type="PackedScene" path="res://menus/options_menu.tscn" id="4_options"]
+ 
+ [sub_resource type="Animation" id="1"]
+ length = 0.5
+@@ -48,3 +49,5 @@ visible = false
+ 
+ [node name="Camera2D" type="Camera2D" parent="." unique_id=1887632648]
+ offset = Vector2(640, 360)
++
++[node name="OptionsMenu" parent="." instance=ExtResource("4_options")]
+diff --git a/2d/role_playing_game/menus/options_menu.gd b/2d/role_playing_game/menus/options_menu.gd
+new file mode 100644
+index 0000000..25a63b3
+--- /dev/null
++++ b/2d/role_playing_game/menus/options_menu.gd
+@@ -0,0 +1,17 @@
++extends CanvasLayer
++
++
++func _ready() -> void:
++	$Root/SettingsPanel/VBox/HighContrast.set_pressed_no_signal(bool(Engine.get_meta("gab_high_contrast", false)))
++
++
++func _on_options_button_pressed() -> void:
++	$Root/SettingsPanel.visible = not $Root/SettingsPanel.visible
++
++
++func _on_close_button_pressed() -> void:
++	$Root/SettingsPanel.hide()
++
++
++func _on_high_contrast_toggled(enabled: bool) -> void:
++	Engine.set_meta("gab_high_contrast", enabled)
+diff --git a/2d/role_playing_game/menus/options_menu.tscn b/2d/role_playing_game/menus/options_menu.tscn
+new file mode 100644
+index 0000000..7b86b55
+--- /dev/null
++++ b/2d/role_playing_game/menus/options_menu.tscn
+@@ -0,0 +1,59 @@
++[gd_scene format=3]
++
++[ext_resource type="Script" path="res://menus/options_menu.gd" id="1"]
++
++[node name="OptionsMenu" type="CanvasLayer"]
++script = ExtResource("1")
++
++[node name="Root" type="Control" parent="."]
++layout_mode = 3
++anchors_preset = 15
++anchor_right = 1.0
++anchor_bottom = 1.0
++grow_horizontal = 2
++grow_vertical = 2
++
++[node name="OptionsButton" type="Button" parent="Root"]
++anchors_preset = 1
++anchor_left = 1.0
++anchor_right = 1.0
++offset_left = -190.0
++offset_top = 12.0
++offset_right = -20.0
++offset_bottom = 62.0
++grow_horizontal = 0
++text = "Options"
++
++[node name="SettingsPanel" type="PanelContainer" parent="Root"]
++visible = false
++anchors_preset = 8
++anchor_left = 0.5
++anchor_top = 0.5
++anchor_right = 0.5
++anchor_bottom = 0.5
++offset_left = -280.0
++offset_top = -120.0
++offset_right = 280.0
++offset_bottom = 120.0
++grow_horizontal = 2
++grow_vertical = 2
++
++[node name="VBox" type="VBoxContainer" parent="Root/SettingsPanel"]
++layout_mode = 2
++
++[node name="Title" type="Label" parent="Root/SettingsPanel/VBox"]
++layout_mode = 2
++text = "Accessibility Options"
++horizontal_alignment = 1
++
++[node name="HighContrast" type="CheckButton" parent="Root/SettingsPanel/VBox"]
++layout_mode = 2
++text = "High contrast battle and dialogue"
++
++[node name="CloseButton" type="Button" parent="Root/SettingsPanel/VBox"]
++layout_mode = 2
++text = "Close"
++
++[connection signal="pressed" from="Root/OptionsButton" to="." method="_on_options_button_pressed"]
++[connection signal="pressed" from="Root/SettingsPanel/VBox/CloseButton" to="." method="_on_close_button_pressed"]
++[connection signal="toggled" from="Root/SettingsPanel/VBox/HighContrast" to="." method="_on_high_contrast_toggled"]
+diff --git a/2d/role_playing_game/tests/agent_run_check.gd b/2d/role_playing_game/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..9581a10
+--- /dev/null
++++ b/2d/role_playing_game/tests/agent_run_check.gd
+@@ -0,0 +1,53 @@
++extends SceneTree
++
++func run() -> void:
++	var options: Node = load("res://menus/options_menu.tscn").instantiate()
++	root.add_child(options)
++	await process_frame
++	var toggle := options.get_node("Root/SettingsPanel/VBox/HighContrast") as CheckButton
++	assert(toggle != null, "high contrast setting exists in options")
++	toggle.set_pressed(true)
++	assert(bool(Engine.get_meta("gab_high_contrast", false)), "settings toggle saves the enabled preference")
++
++	var combat: Node2D = load("res://combat/combat.tscn").instantiate()
++	root.add_child(combat)
++	await process_frame
++	var combatants := combat.get_node("Combatants")
++	var player: Node = load("res://combat/combatants/player.tscn").instantiate()
++	player.name = "Player"
++	var opponent: Node = load("res://combat/combatants/opponent.tscn").instantiate()
++	opponent.name = "Opponent"
++	combatants.add_child(player)
++	combatants.add_child(opponent)
++	var ui := combat.get_node("CombatCanvas/UI")
++	ui.initialize()
++	var panel := ui.get_node("Buttons") as PanelContainer
++	var attack := ui.get_node("Buttons/GridContainer/Attack") as Button
++	var panel_style := panel.get_theme_stylebox("panel") as StyleBoxFlat
++	var button_style := attack.get_theme_stylebox("normal") as StyleBoxFlat
++	var focus_style := attack.get_theme_stylebox("focus") as StyleBoxFlat
++	assert(panel_style.bg_color == Color.BLACK and panel_style.border_color == Color.WHITE, "battle menu panel is black with white border")
++	assert(button_style.bg_color == Color.BLACK and button_style.border_color == Color.WHITE, "battle buttons use black background and white border")
++	assert(attack.get_theme_color("font_color") == Color.WHITE, "battle command text is white")
++	assert(focus_style.border_color == Color.YELLOW and focus_style.get_border_width(SIDE_LEFT) == 5, "focused selection has a prominent yellow outline")
++
++	var dialogue: Control = load("res://dialogue/interface/interface.tscn").instantiate()
++	root.add_child(dialogue)
++	await process_frame
++	var dialogue_panel := dialogue.get_node("Panel2") as Panel
++	var dialogue_style := dialogue_panel.get_theme_stylebox("panel") as StyleBoxFlat
++	assert(dialogue_style.bg_color == Color.BLACK, "dialogue text box has an opaque black background")
++	assert(dialogue.get_node("Text").get_theme_color("default_color") == Color.WHITE, "dialogue text is white")
++
++	var before: float = opponent.get_node("Health").life
++	player.active = true
++	ui._on_Attack_button_up()
++	assert(opponent.get_node("Health").life == before - player.damage, "battle command remains functional under high contrast")
++
++	toggle.set_pressed(false)
++	assert(not bool(Engine.get_meta("gab_high_contrast", true)), "setting can disable high contrast")
++	print("PASS: 10 high-contrast and gameplay assertions")
++	quit(0)
++
++func _initialize() -> void:
++	call_deferred("run")

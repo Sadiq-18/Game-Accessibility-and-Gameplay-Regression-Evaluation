@@ -1,0 +1,90 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..e1fea22 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,26 @@
+ extends CanvasLayer
+ 
+ signal start_game
++static var ui_scale_index: int = 0
++@onready var ui_scale_option := $UIScaleOption as OptionButton
++
++func _ready() -> void:
++	ui_scale_option.add_item("100% HUD")
++	ui_scale_option.add_item("125% HUD")
++	ui_scale_option.add_item("150% HUD")
++	ui_scale_option.select(ui_scale_index)
++	_apply_ui_scale()
++
++
++func _on_ui_scale_selected(index: int) -> void:
++	ui_scale_index = clampi(index, 0, 2)
++	_apply_ui_scale()
++
++
++func _apply_ui_scale() -> void:
++	var scale_value: float = [1.0, 1.25, 1.5][ui_scale_index]
++	var viewport_size := get_viewport().get_visible_rect().size
++	transform = Transform2D(Vector2(scale_value, 0), Vector2(0, scale_value), viewport_size * (1.0 - scale_value) / 2.0)
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..feb7eb4 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -37,6 +37,17 @@ text = "Dodge the
+ Creeps"
+ horizontal_alignment = 1
+ 
++[node name="UIScaleOption" type="OptionButton" parent="." unique_id=199120008]
++anchors_preset = 1
++anchor_left = 1.0
++anchor_right = 1.0
++offset_left = -220.0
++offset_top = 90.0
++offset_right = -10.0
++offset_bottom = 140.0
++grow_horizontal = 0
++text = "100% HUD"
++
+ [node name="StartButton" type="Button" parent="." unique_id=1561548516]
+ anchors_preset = 7
+ anchor_left = 0.5
+@@ -58,4 +69,5 @@ text = "Start"
+ one_shot = true
+ 
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
++[connection signal="item_selected" from="UIScaleOption" to="." method="_on_ui_scale_selected"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..9b656a9
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,25 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud: CanvasLayer = main.get_node("HUD")
++	var option := hud.get_node("UIScaleOption") as OptionButton
++	assert(option.item_count == 3 and option.selected == 0, "100%, 125%, and 150% HUD choices exist")
++	assert(is_equal_approx(hud.transform.x.x, 1.0), "HUD defaults to 100%")
++	hud.call("_on_ui_scale_selected", 1)
++	assert(is_equal_approx(hud.transform.x.x, 1.25), "125% scales horizontal HUD")
++	assert(is_equal_approx(hud.transform.y.y, 1.25), "125% scales vertical HUD")
++	assert(hud.transform.origin.x < 0.0 and hud.transform.origin.y < 0.0, "scale is centered on viewport")
++	hud.call("_on_ui_scale_selected", 2)
++	assert(is_equal_approx(hud.transform.x.x, 1.5), "150% scale works")
++	hud.call("_on_ui_scale_selected", 0)
++	assert(is_equal_approx(hud.transform.x.x, 1.0), "100% restores original scale")
++	assert(main.get_node("Player").speed == 400, "player movement speed preserved")
++	assert(main.get_node("MobTimer").wait_time == 0.5, "mob timer remains unchanged")
++	print("PASS: 9 HUD-scaling and regression assertions")
++	quit(0)

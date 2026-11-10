@@ -1,0 +1,246 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..e222137 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,10 @@
+ extends CanvasLayer
+ 
+ signal start_game
++signal high_contrast_toggled(enabled: bool)
++
++func _on_high_contrast_toggled(enabled: bool) -> void:
++	high_contrast_toggled.emit(enabled)
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..d17a725 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -54,8 +54,25 @@ theme_override_font_sizes/font_size = 60
+ shortcut = SubResource("4")
+ text = "Start"
+ 
++[node name="HighContrastToggle" type="CheckButton" parent="." unique_id=199120005]
++anchors_preset = 7
++anchor_left = 0.5
++anchor_top = 1.0
++anchor_right = 0.5
++anchor_bottom = 1.0
++offset_left = -160.0
++offset_top = -280.0
++offset_right = 160.0
++offset_bottom = -225.0
++grow_horizontal = 2
++grow_vertical = 0
++theme_override_fonts/font = ExtResource("2_2jm3i")
++theme_override_font_sizes/font_size = 24
++text = "High contrast"
++
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
++[connection signal="toggled" from="HighContrastToggle" to="." method="_on_high_contrast_toggled"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/main.gd b/2d/dodge_the_creeps/main.gd
+index bd74c2e..e39bb63 100644
+--- a/2d/dodge_the_creeps/main.gd
++++ b/2d/dodge_the_creeps/main.gd
+@@ -3,6 +3,10 @@ extends Node
+ @export var mob_scene: PackedScene
+ var score
+ 
++func _on_high_contrast_toggled(enabled: bool) -> void:
++	Engine.set_meta("gab_high_contrast", enabled)
++	get_tree().call_group("high_contrast_entities", "set_high_contrast", enabled)
++
+ func game_over():
+ 	$ScoreTimer.stop()
+ 	$MobTimer.stop()
+diff --git a/2d/dodge_the_creeps/main.tscn b/2d/dodge_the_creeps/main.tscn
+index c84519c..da9b65f 100644
+--- a/2d/dodge_the_creeps/main.tscn
++++ b/2d/dodge_the_creeps/main.tscn
+@@ -53,6 +53,7 @@ stream = ExtResource("5_55d8h")
+ stream = ExtResource("6_hp1r0")
+ 
+ [connection signal="hit" from="Player" to="." method="game_over"]
++[connection signal="high_contrast_toggled" from="HUD" to="." method="_on_high_contrast_toggled"]
+ [connection signal="timeout" from="MobTimer" to="." method="_on_MobTimer_timeout"]
+ [connection signal="timeout" from="ScoreTimer" to="." method="_on_ScoreTimer_timeout"]
+ [connection signal="timeout" from="StartTimer" to="." method="_on_StartTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/mob.gd b/2d/dodge_the_creeps/mob.gd
+index 6db2a0f..0e5115c 100644
+--- a/2d/dodge_the_creeps/mob.gd
++++ b/2d/dodge_the_creeps/mob.gd
+@@ -4,6 +4,12 @@ func _ready():
+ 	var mob_types = Array($AnimatedSprite2D.sprite_frames.get_animation_names())
+ 	$AnimatedSprite2D.animation = mob_types.pick_random()
+ 	$AnimatedSprite2D.play()
++	set_high_contrast(Engine.get_meta("gab_high_contrast", false))
++
++
++func set_high_contrast(enabled: bool) -> void:
++	var material := $AnimatedSprite2D.material as ShaderMaterial
++	material.set_shader_parameter("enabled", enabled)
+ 
+ 
+ func _on_VisibilityNotifier2D_screen_exited():
+diff --git a/2d/dodge_the_creeps/mob.tscn b/2d/dodge_the_creeps/mob.tscn
+index 29408e4..7aee4a8 100644
+--- a/2d/dodge_the_creeps/mob.tscn
++++ b/2d/dodge_the_creeps/mob.tscn
+@@ -7,6 +7,14 @@
+ [ext_resource type="Texture2D" uid="uid://dyw702efe6meu" path="res://art/enemyWalking_2.png" id="5"]
+ [ext_resource type="Texture2D" uid="uid://d182mv7y80xqy" path="res://art/enemySwimming_1.png" id="6"]
+ [ext_resource type="Texture2D" uid="uid://dmgglhdyowipd" path="res://art/enemySwimming_2.png" id="7"]
++[ext_resource type="Shader" path="res://outline.gdshader" id="outline_shader"]
++
++[sub_resource type="ShaderMaterial" id="MobOutlineMaterial"]
++resource_local_to_scene = true
++shader = ExtResource("outline_shader")
++shader_parameter/enabled = false
++shader_parameter/outline_color = Color(1, 0.9, 0.1, 1)
++shader_parameter/outline_width = 2.0
+ 
+ [sub_resource type="SpriteFrames" id="1"]
+ animations = [{
+@@ -48,7 +56,7 @@ animations = [{
+ radius = 37.0
+ height = 100.0
+ 
+-[node name="Mob" type="RigidBody2D" unique_id=371809901 groups=["mobs"]]
++[node name="Mob" type="RigidBody2D" unique_id=371809901 groups=["mobs", "high_contrast_entities"]]
+ collision_mask = 0
+ gravity_scale = 0.0
+ script = ExtResource("1")
+@@ -56,6 +64,7 @@ script = ExtResource("1")
+ [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1998522389]
+ scale = Vector2(0.75, 0.75)
+ sprite_frames = SubResource("1")
++material = SubResource("MobOutlineMaterial")
+ animation = &"walk"
+ 
+ [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1880423722]
+diff --git a/2d/dodge_the_creeps/outline.gdshader b/2d/dodge_the_creeps/outline.gdshader
+new file mode 100644
+index 0000000..2e66f17
+--- /dev/null
++++ b/2d/dodge_the_creeps/outline.gdshader
+@@ -0,0 +1,20 @@
++shader_type canvas_item;
++
++uniform bool enabled = false;
++uniform vec4 outline_color : source_color = vec4(1.0, 0.9, 0.1, 1.0);
++uniform float outline_width = 2.0;
++
++void fragment() {
++	if (enabled && texture(TEXTURE, UV).a < 0.1) {
++		float surrounding_alpha = 0.0;
++		for (int x = -2; x <= 2; x++) {
++			for (int y = -2; y <= 2; y++) {
++				vec2 sample_uv = UV + vec2(float(x), float(y)) * TEXTURE_PIXEL_SIZE * outline_width;
++				surrounding_alpha = max(surrounding_alpha, texture(TEXTURE, sample_uv).a);
++			}
++		}
++		if (surrounding_alpha > 0.1) {
++			COLOR = outline_color;
++		}
++	}
++}
+diff --git a/2d/dodge_the_creeps/player.gd b/2d/dodge_the_creeps/player.gd
+index e2d3e87..4ab5e67 100644
+--- a/2d/dodge_the_creeps/player.gd
++++ b/2d/dodge_the_creeps/player.gd
+@@ -8,6 +8,12 @@ var screen_size # Size of the game window.
+ func _ready():
+ 	screen_size = get_viewport_rect().size
+ 	hide()
++	set_high_contrast(Engine.get_meta("gab_high_contrast", false))
++
++
++func set_high_contrast(enabled: bool) -> void:
++	var material := $AnimatedSprite2D.material as ShaderMaterial
++	material.set_shader_parameter("enabled", enabled)
+ 
+ 
+ func _process(delta):
+diff --git a/2d/dodge_the_creeps/player.tscn b/2d/dodge_the_creeps/player.tscn
+index 4b15070..b1d0551 100644
+--- a/2d/dodge_the_creeps/player.tscn
++++ b/2d/dodge_the_creeps/player.tscn
+@@ -5,6 +5,14 @@
+ [ext_resource type="Texture2D" uid="uid://ddjou2q6gxlfr" path="res://art/playerGrey_walk2.png" id="3"]
+ [ext_resource type="Texture2D" uid="uid://bcow5c46vixno" path="res://art/playerGrey_up1.png" id="4"]
+ [ext_resource type="Texture2D" uid="uid://dw3lwgwhpbfx8" path="res://art/playerGrey_up2.png" id="5"]
++[ext_resource type="Shader" path="res://outline.gdshader" id="outline_shader"]
++
++[sub_resource type="ShaderMaterial" id="PlayerOutlineMaterial"]
++resource_local_to_scene = true
++shader = ExtResource("outline_shader")
++shader_parameter/enabled = false
++shader_parameter/outline_color = Color(1, 0.9, 0.1, 1)
++shader_parameter/outline_width = 2.0
+ 
+ [sub_resource type="SpriteFrames" id="1"]
+ animations = [{
+@@ -53,13 +61,14 @@ gravity = Vector3(0, 0, 0)
+ scale_curve = SubResource("6")
+ color_ramp = SubResource("4")
+ 
+-[node name="Player" type="Area2D" unique_id=2141725708]
++[node name="Player" type="Area2D" unique_id=2141725708 groups=["high_contrast_entities"]]
+ z_index = 10
+ script = ExtResource("1")
+ 
+ [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1437394421]
+ scale = Vector2(0.5, 0.5)
+ sprite_frames = SubResource("1")
++material = SubResource("PlayerOutlineMaterial")
+ animation = &"right"
+ 
+ [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1954506745]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..d8f4613
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,37 @@
++extends SceneTree
++
++func outline_enabled(node: Node) -> bool:
++	var material := node.get_node("AnimatedSprite2D").material as ShaderMaterial
++	return material.get_shader_parameter("enabled")
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	Engine.set_meta("gab_high_contrast", false)
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var player := main.get_node("Player")
++	var toggle := main.get_node("HUD/HighContrastToggle") as CheckButton
++	assert(toggle != null, "high-contrast control exists")
++	assert(not outline_enabled(player), "outline defaults off")
++	main.call("_on_high_contrast_toggled", true)
++	assert(outline_enabled(player), "player outline shader enabled")
++	var player_material := player.get_node("AnimatedSprite2D").material as ShaderMaterial
++	assert(is_equal_approx(float(player_material.get_shader_parameter("outline_width")), 2.0), "outline has thick width")
++	assert(player_material.get_shader_parameter("outline_color") == Color(1, 0.9, 0.1, 1), "outline is bright yellow")
++	main.call("_on_MobTimer_timeout")
++	var mobs := main.find_children("*", "RigidBody2D", true, false)
++	var mob: Node
++	for candidate in mobs:
++		if candidate.has_method("set_high_contrast"):
++			mob = candidate
++	assert(mob != null and outline_enabled(mob), "new mob outline enabled")
++	assert((player_material.shader.code as String).contains("surrounding_alpha"), "shader uses neighboring sprite pixels for border")
++	main.call("_on_high_contrast_toggled", false)
++	assert(not outline_enabled(player), "player outline can be disabled")
++	assert(not outline_enabled(mob), "mob outline can be disabled")
++	assert(player.speed == 400, "player movement speed preserved")
++	print("PASS: 9 high-contrast and regression assertions")
++	quit(0)

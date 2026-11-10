@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Godot editor cache and generated import data
+.godot/
+
+# Local/editor and operating system files
+.DS_Store
+Thumbs.db
+*.tmp

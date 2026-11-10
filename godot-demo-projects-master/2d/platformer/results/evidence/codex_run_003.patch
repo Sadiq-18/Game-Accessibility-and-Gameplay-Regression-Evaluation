@@ -1,0 +1,256 @@
+diff --git a/2d/platformer/default_bus_layout.tres b/2d/platformer/default_bus_layout.tres
+index 74dd923..4d6dc46 100644
+--- a/2d/platformer/default_bus_layout.tres
++++ b/2d/platformer/default_bus_layout.tres
+@@ -2,3 +2,15 @@
+ 
+ [resource]
+ bus/0/volume_db = -11.9576
++bus/1/name = "Music"
++bus/1/solo = false
++bus/1/mute = false
++bus/1/bypass_fx = false
++bus/1/volume_db = 0.0
++bus/1/send = "Master"
++bus/2/name = "SFX"
++bus/2/solo = false
++bus/2/mute = false
++bus/2/bypass_fx = false
++bus/2/volume_db = 0.0
++bus/2/send = "Master"
+diff --git a/2d/platformer/enemy/enemy.tscn b/2d/platformer/enemy/enemy.tscn
+index 920d78a..76333ca 100644
+--- a/2d/platformer/enemy/enemy.tscn
++++ b/2d/platformer/enemy/enemy.tscn
+@@ -301,7 +301,9 @@ gravity = Vector2(0, -250)
+ color_ramp = SubResource("7")
+ 
+ [node name="Hit" type="AudioStreamPlayer2D" parent="." unique_id=1791067492]
++bus = "SFX"
+ stream = ExtResource("3")
+ 
+ [node name="Explode" type="AudioStreamPlayer2D" parent="." unique_id=453738939]
++bus = "SFX"
+ stream = ExtResource("2")
+diff --git a/2d/platformer/gui/pause_menu.gd b/2d/platformer/gui/pause_menu.gd
+index a89c899..ba15952 100644
+--- a/2d/platformer/gui/pause_menu.gd
++++ b/2d/platformer/gui/pause_menu.gd
+@@ -5,13 +5,48 @@ extends Control
+ @export var fade_in_duration := 0.3
+ @export var fade_out_duration := 0.2
+ 
++static var master_volume: float = 0.2526
++static var music_volume: float = 1.0
++static var sfx_volume: float = 1.0
++
+ @onready var center_cont := $ColorRect/CenterContainer as CenterContainer
+ @onready var resume_button := center_cont.get_node(^"VBoxContainer/ResumeButton") as Button
++@onready var master_slider := center_cont.get_node(^"VBoxContainer/AudioControls/MasterSlider") as HSlider
++@onready var music_slider := center_cont.get_node(^"VBoxContainer/AudioControls/MusicSlider") as HSlider
++@onready var sfx_slider := center_cont.get_node(^"VBoxContainer/AudioControls/SFXSlider") as HSlider
+ @onready var coins_counter := $ColorRect/CoinsCounter as CoinsCounter
+ 
+ 
+ func _ready() -> void:
+ 	hide()
++	master_slider.value = master_volume
++	music_slider.value = music_volume
++	sfx_slider.value = sfx_volume
++	_apply_audio_volume("Master", master_volume)
++	_apply_audio_volume("Music", music_volume)
++	_apply_audio_volume("SFX", sfx_volume)
++
++
++func _on_master_slider_value_changed(value: float) -> void:
++	master_volume = value
++	_apply_audio_volume("Master", value)
++
++
++func _on_music_slider_value_changed(value: float) -> void:
++	music_volume = value
++	_apply_audio_volume("Music", value)
++
++
++func _on_sfx_slider_value_changed(value: float) -> void:
++	sfx_volume = value
++	_apply_audio_volume("SFX", value)
++
++
++func _apply_audio_volume(bus_name: String, value: float) -> void:
++	var bus_index := AudioServer.get_bus_index(bus_name)
++	if bus_index < 0:
++		return
++	AudioServer.set_bus_volume_db(bus_index, linear_to_db(maxf(value, 0.0001)))
+ 
+ 
+ func close() -> void:
+diff --git a/2d/platformer/gui/pause_menu.tscn b/2d/platformer/gui/pause_menu.tscn
+index bd79e7b..9ea5c40 100644
+--- a/2d/platformer/gui/pause_menu.tscn
++++ b/2d/platformer/gui/pause_menu.tscn
+@@ -49,6 +49,46 @@ layout_mode = 2
+ size_flags_horizontal = 4
+ text = "Resume"
+ 
++[node name="AudioControls" type="VBoxContainer" parent="ColorRect/CenterContainer/VBoxContainer"]
++layout_mode = 2
++size_flags_horizontal = 4
++
++[node name="MasterLabel" type="Label" parent="ColorRect/CenterContainer/VBoxContainer/AudioControls"]
++layout_mode = 2
++text = "Master"
++
++[node name="MasterSlider" type="HSlider" parent="ColorRect/CenterContainer/VBoxContainer/AudioControls"]
++layout_mode = 2
++size_flags_horizontal = 4
++custom_minimum_size = Vector2(180, 0)
++min_value = 0.0
++step = 0.05
++value = 0.25
++
++[node name="MusicLabel" type="Label" parent="ColorRect/CenterContainer/VBoxContainer/AudioControls"]
++layout_mode = 2
++text = "Music"
++
++[node name="MusicSlider" type="HSlider" parent="ColorRect/CenterContainer/VBoxContainer/AudioControls"]
++layout_mode = 2
++size_flags_horizontal = 4
++custom_minimum_size = Vector2(180, 0)
++min_value = 0.0
++step = 0.05
++value = 1.0
++
++[node name="SFXLabel" type="Label" parent="ColorRect/CenterContainer/VBoxContainer/AudioControls"]
++layout_mode = 2
++text = "SFX"
++
++[node name="SFXSlider" type="HSlider" parent="ColorRect/CenterContainer/VBoxContainer/AudioControls"]
++layout_mode = 2
++size_flags_horizontal = 4
++custom_minimum_size = Vector2(180, 0)
++min_value = 0.0
++step = 0.05
++value = 1.0
++
+ [node name="QuitButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer" unique_id=2134735849]
+ layout_mode = 2
+ size_flags_horizontal = 4
+@@ -62,4 +102,7 @@ offset_right = 105.0
+ offset_bottom = 50.0
+ 
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/ResumeButton" to="." method="_on_resume_button_pressed"]
++[connection signal="value_changed" from="ColorRect/CenterContainer/VBoxContainer/AudioControls/MasterSlider" to="." method="_on_master_slider_value_changed"]
++[connection signal="value_changed" from="ColorRect/CenterContainer/VBoxContainer/AudioControls/MusicSlider" to="." method="_on_music_slider_value_changed"]
++[connection signal="value_changed" from="ColorRect/CenterContainer/VBoxContainer/AudioControls/SFXSlider" to="." method="_on_sfx_slider_value_changed"]
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+diff --git a/2d/platformer/level/coin.tscn b/2d/platformer/level/coin.tscn
+index e35f8ef..7645040 100644
+--- a/2d/platformer/level/coin.tscn
++++ b/2d/platformer/level/coin.tscn
+@@ -183,5 +183,6 @@ autoplay = &"spinning"
+ shape = SubResource("3")
+ 
+ [node name="Pickup" type="AudioStreamPlayer2D" parent="." unique_id=469882844]
++bus = "SFX"
+ 
+ [connection signal="body_entered" from="." to="." method="_on_body_entered"]
+diff --git a/2d/platformer/music.tscn b/2d/platformer/music.tscn
+index 150eb62..6441977 100644
+--- a/2d/platformer/music.tscn
++++ b/2d/platformer/music.tscn
+@@ -6,4 +6,5 @@
+ process_mode = 1
+ stream = ExtResource("1_8pjkj")
+ volume_db = -3.0
++bus = "Music"
+ autoplay = true
+diff --git a/2d/platformer/player/player.tscn b/2d/platformer/player/player.tscn
+index 6108e1d..5a31252 100644
+--- a/2d/platformer/player/player.tscn
++++ b/2d/platformer/player/player.tscn
+@@ -212,6 +212,7 @@ position = Vector2(14, 1)
+ script = ExtResource("8")
+ 
+ [node name="Shoot" type="AudioStreamPlayer2D" parent="Sprite2D/Gun" unique_id=1036518396]
++bus = "SFX"
+ position = Vector2(-30.6589, -6.13176)
+ stream = ExtResource("6")
+ 
+@@ -236,6 +237,7 @@ position = Vector2(0, -14)
+ shape = SubResource("11")
+ 
+ [node name="Jump" type="AudioStreamPlayer2D" parent="." unique_id=2076416565]
++bus = "SFX"
+ stream = ExtResource("5")
+ volume_db = -3.0
+ 
+diff --git a/2d/platformer/tests/agent_run_check.gd b/2d/platformer/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..631ed43
+--- /dev/null
++++ b/2d/platformer/tests/agent_run_check.gd
+@@ -0,0 +1,63 @@
++extends SceneTree
++
++var failures := 0
++
++
++func _initialize() -> void:
++	call_deferred("_run_checks")
++
++
++func _check(condition: bool, message: String) -> void:
++	if condition:
++		print("PASS: ", message)
++	else:
++		failures += 1
++		push_error("FAIL: " + message)
++
++
++func _run_checks() -> void:
++	var music_bus := AudioServer.get_bus_index("Music")
++	var sfx_bus := AudioServer.get_bus_index("SFX")
++	_check(music_bus >= 0 and sfx_bus >= 0 and music_bus != sfx_bus, "Music and SFX have independent audio buses")
++	var menu := (load("res://gui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
++	root.add_child(menu)
++	await process_frame
++	_check(menu.master_slider != null and menu.music_slider != null and menu.sfx_slider != null, "Master, Music, and SFX sliders appear in the pause menu")
++	var sfx_before := AudioServer.get_bus_volume_db(sfx_bus)
++	menu.music_slider.value = 0.25
++	await process_frame
++	_check(is_equal_approx(AudioServer.get_bus_volume_db(music_bus), linear_to_db(0.25)), "Music slider immediately changes the Music bus")
++	_check(is_equal_approx(AudioServer.get_bus_volume_db(sfx_bus), sfx_before), "changing Music volume leaves SFX volume unchanged")
++	menu.sfx_slider.value = 0.4
++	menu.master_slider.value = 0.6
++	await process_frame
++	_check(is_equal_approx(AudioServer.get_bus_volume_db(sfx_bus), linear_to_db(0.4)), "SFX slider changes only the SFX bus")
++	_check(is_equal_approx(AudioServer.get_bus_volume_db(0), linear_to_db(0.6)), "Master slider controls the Master bus")
++	var music_player := (load("res://music.tscn") as PackedScene).instantiate() as AudioStreamPlayer
++	_check(music_player.bus == "Music", "background music routes to the Music bus")
++	music_player.queue_free()
++	var player_scene := load("res://player/player.tscn") as PackedScene
++	var player := player_scene.instantiate() as Player
++	root.add_child(player)
++	_check(player.jump_sound.bus == "SFX" and player.gun.sound_shoot.bus == "SFX", "jump and shoot effects route to SFX")
++	var coin := (load("res://level/coin.tscn") as PackedScene).instantiate() as Coin
++	root.add_child(coin)
++	_check(coin.get_node("Pickup").bus == "SFX", "coin pickup effect routes to SFX")
++	menu.queue_free()
++	player.queue_free()
++	coin.queue_free()
++	await process_frame
++	var next_scene_menu := (load("res://gui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
++	root.add_child(next_scene_menu)
++	await process_frame
++	_check(is_equal_approx(next_scene_menu.music_slider.value, 0.25) and is_equal_approx(next_scene_menu.sfx_slider.value, 0.4), "Music and SFX levels persist into a new scene's menu")
++	_check(is_equal_approx(AudioServer.get_bus_volume_db(music_bus), linear_to_db(0.25)), "Music bus level persists across menu instances")
++
++	if failures == 0:
++		print("RESULT: PASS; independent audio controls and persistence checks passed.")
++	else:
++		print("RESULT: FAIL; ", failures, " check(s) failed.")
++	for child in root.get_children():
++		child.queue_free()
++	await process_frame
++	call_deferred("quit", 0 if failures == 0 else 1)

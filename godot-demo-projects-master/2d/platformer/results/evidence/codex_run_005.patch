@@ -1,0 +1,153 @@
+diff --git a/2d/platformer/gui/pause_menu.gd b/2d/platformer/gui/pause_menu.gd
+index a89c899..9a0e74f 100644
+--- a/2d/platformer/gui/pause_menu.gd
++++ b/2d/platformer/gui/pause_menu.gd
+@@ -5,13 +5,54 @@ extends Control
+ @export var fade_in_duration := 0.3
+ @export var fade_out_duration := 0.2
+ 
++static var high_contrast_enabled: bool = false
++
+ @onready var center_cont := $ColorRect/CenterContainer as CenterContainer
+ @onready var resume_button := center_cont.get_node(^"VBoxContainer/ResumeButton") as Button
++@onready var high_contrast_toggle := center_cont.get_node(^"VBoxContainer/HighContrastToggle") as CheckButton
+ @onready var coins_counter := $ColorRect/CoinsCounter as CoinsCounter
+ 
+ 
+ func _ready() -> void:
+ 	hide()
++	high_contrast_toggle.button_pressed = high_contrast_enabled
++	_apply_high_contrast(high_contrast_enabled)
++
++
++func _on_high_contrast_toggled(enabled: bool) -> void:
++	high_contrast_enabled = enabled
++	_apply_high_contrast(enabled)
++
++
++func _apply_high_contrast(enabled: bool) -> void:
++	for control in find_children("*", "Button", true, false):
++		var button := control as Button
++		if not enabled:
++			for color_name in [&"font_color", &"font_color_hover", &"font_color_pressed", &"font_color_hover_pressed"]:
++				button.remove_theme_color_override(color_name)
++			for style_name in [&"normal", &"hover", &"pressed", &"focus"]:
++				button.remove_theme_stylebox_override(style_name)
++			continue
++		button.add_theme_color_override(&"font_color", Color.BLACK)
++		button.add_theme_color_override(&"font_color_hover", Color.BLACK)
++		button.add_theme_color_override(&"font_color_pressed", Color.WHITE)
++		button.add_theme_color_override(&"font_color_hover_pressed", Color.WHITE)
++		var normal := _contrast_style(Color.WHITE, Color.BLACK, 2)
++		var hover := _contrast_style(Color.YELLOW, Color.BLACK, 2)
++		var pressed := _contrast_style(Color.BLACK, Color.WHITE, 2)
++		var focus := _contrast_style(Color.YELLOW, Color.BLACK, 4)
++		button.add_theme_stylebox_override(&"normal", normal)
++		button.add_theme_stylebox_override(&"hover", hover)
++		button.add_theme_stylebox_override(&"pressed", pressed)
++		button.add_theme_stylebox_override(&"focus", focus)
++
++
++func _contrast_style(background: Color, border: Color, width: int) -> StyleBoxFlat:
++	var style := StyleBoxFlat.new()
++	style.bg_color = background
++	style.border_color = border
++	style.set_border_width_all(width)
++	return style
+ 
+ 
+ func close() -> void:
+diff --git a/2d/platformer/gui/pause_menu.tscn b/2d/platformer/gui/pause_menu.tscn
+index bd79e7b..4925600 100644
+--- a/2d/platformer/gui/pause_menu.tscn
++++ b/2d/platformer/gui/pause_menu.tscn
+@@ -49,6 +49,10 @@ layout_mode = 2
+ size_flags_horizontal = 4
+ text = "Resume"
+ 
++[node name="HighContrastToggle" type="CheckButton" parent="ColorRect/CenterContainer/VBoxContainer"]
++layout_mode = 2
++text = "High Contrast"
++
+ [node name="QuitButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer" unique_id=2134735849]
+ layout_mode = 2
+ size_flags_horizontal = 4
+@@ -62,4 +66,5 @@ offset_right = 105.0
+ offset_bottom = 50.0
+ 
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/ResumeButton" to="." method="_on_resume_button_pressed"]
++[connection signal="toggled" from="ColorRect/CenterContainer/VBoxContainer/HighContrastToggle" to="." method="_on_high_contrast_toggled"]
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+diff --git a/2d/platformer/tests/agent_run_check.gd b/2d/platformer/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..f9bfa08
+--- /dev/null
++++ b/2d/platformer/tests/agent_run_check.gd
+@@ -0,0 +1,67 @@
++extends SceneTree
++
++var failures := 0
++
++
++func _initialize() -> void:
++	call_deferred("_run_checks")
++
++
++func _check(condition: bool, message: String) -> void:
++	if condition:
++		print("PASS: ", message)
++	else:
++		failures += 1
++		push_error("FAIL: " + message)
++
++
++func _linear_channel(value: float) -> float:
++	return value / 12.92 if value <= 0.04045 else pow((value + 0.055) / 1.055, 2.4)
++
++
++func _luminance(color: Color) -> float:
++	return 0.2126 * _linear_channel(color.r) + 0.7152 * _linear_channel(color.g) + 0.0722 * _linear_channel(color.b)
++
++
++func _contrast_ratio(first: Color, second: Color) -> float:
++	var values := [_luminance(first), _luminance(second)]
++	values.sort()
++	return (values[1] + 0.05) / (values[0] + 0.05)
++
++
++func _run_checks() -> void:
++	var menu := (load("res://gui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
++	root.add_child(menu)
++	await process_frame
++	_check(menu.high_contrast_toggle != null and menu.high_contrast_toggle.visible, "high-contrast toggle is available in the pause menu")
++	menu.high_contrast_toggle.button_pressed = true
++	menu.high_contrast_toggle.toggled.emit(true)
++	var button := menu.resume_button
++	var normal_style := button.get_theme_stylebox(&"normal") as StyleBoxFlat
++	var focus_style := button.get_theme_stylebox(&"focus") as StyleBoxFlat
++	_check(normal_style != null and button.get_theme_color(&"font_color") == Color.BLACK, "high-contrast mode uses black text on a white button")
++	_check(_contrast_ratio(button.get_theme_color(&"font_color"), normal_style.bg_color) >= 4.5, "button text contrast is at least 4.5:1")
++	_check(focus_style != null and focus_style.get_border_width(SIDE_LEFT) >= 4 and focus_style.border_color == Color.BLACK, "keyboard focus has a distinct thick outline")
++	_check(_contrast_ratio(button.get_theme_color(&"font_color"), focus_style.bg_color) >= 4.5, "focused button text also meets the contrast threshold")
++	_check(button.is_connected("pressed", Callable(menu, "_on_resume_button_pressed")), "Resume button signal remains connected")
++	_check(menu.get_node("ColorRect/CenterContainer/VBoxContainer/QuitButton").is_connected("pressed", Callable(menu, "_on_quit_button_pressed")), "Quit button signal remains connected")
++	_check(PauseMenu.high_contrast_enabled, "high-contrast setting is stored for new menu instances")
++	menu.queue_free()
++	await process_frame
++	var next_menu := (load("res://gui/pause_menu.tscn") as PackedScene).instantiate() as PauseMenu
++	root.add_child(next_menu)
++	await process_frame
++	_check(next_menu.high_contrast_toggle.button_pressed, "high-contrast setting persists in a new pause menu instance")
++	_check(next_menu.resume_button.has_theme_stylebox_override(&"focus"), "focus outline remains active in the new instance")
++	next_menu.high_contrast_toggle.button_pressed = false
++	next_menu.high_contrast_toggle.toggled.emit(false)
++	_check(not next_menu.resume_button.has_theme_stylebox_override(&"normal"), "Normal mode restores the shared theme styles")
++
++	if failures == 0:
++		print("RESULT: PASS; high-contrast acceptance and menu interaction checks passed.")
++	else:
++		print("RESULT: FAIL; ", failures, " check(s) failed.")
++	for child in root.get_children():
++		child.queue_free()
++	await process_frame
++	call_deferred("quit", 0 if failures == 0 else 1)

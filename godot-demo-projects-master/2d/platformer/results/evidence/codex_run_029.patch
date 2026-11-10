@@ -1,0 +1,104 @@
+diff --git a/2d/role_playing_game/combat/interface/info.tscn b/2d/role_playing_game/combat/interface/info.tscn
+index c4b8d61..0df9b55 100644
+--- a/2d/role_playing_game/combat/interface/info.tscn
++++ b/2d/role_playing_game/combat/interface/info.tscn
+@@ -97,3 +97,10 @@ step = 1.0
+ value = 5.0
+ rounded = true
+ show_percentage = false
++
++[node name="StatusLabel" type="Label" parent="VBoxContainer"]
++layout_mode = 2
++theme_override_colors/font_color = Color(0.0745098, 0.27451, 0.368627, 1)
++theme_override_font_sizes/font_size = 20
++text = "[STRONG] HP 10/10"
++horizontal_alignment = 1
+diff --git a/2d/role_playing_game/combat/interface/ui.gd b/2d/role_playing_game/combat/interface/ui.gd
+index 339f882..0a1750c 100644
+--- a/2d/role_playing_game/combat/interface/ui.gd
++++ b/2d/role_playing_game/combat/interface/ui.gd
+@@ -12,15 +12,34 @@ func initialize() -> void:
+ 		var health := combatant.get_node(^"Health")
+ 		var info := info_scene.instantiate()
+ 		var health_info := info.get_node(^"VBoxContainer/HealthContainer/Health")
++		var status_label := info.get_node(^"VBoxContainer/StatusLabel") as Label
+ 		health_info.value = health.life
+ 		health_info.max_value = health.max_life
+ 		info.get_node(^"VBoxContainer/NameContainer/Name").text = combatant.name
+-		health.health_changed.connect(health_info.set_value)
++		_refresh_health_status(status_label, health)
++		health.health_changed.connect(_on_health_changed.bind(health_info, status_label, health))
++		health.dead.connect(_on_health_dead.bind(health_info, status_label, health))
+ 		$Combatants.add_child(info)
+ 
+ 	$Buttons/GridContainer/Attack.grab_focus()
+ 
+ 
++func _on_health_changed(life: float, health_info: ProgressBar, status_label: Label, health: Node) -> void:
++	health_info.value = life
++	_refresh_health_status(status_label, health)
++
++
++func _on_health_dead(health_info: ProgressBar, status_label: Label, health: Node) -> void:
++	health_info.value = 0
++	_refresh_health_status(status_label, health, true)
++
++
++func _refresh_health_status(status_label: Label, health: Node, is_dead: bool = false) -> void:
++	var ratio := float(health.life) / maxf(1.0, float(health.max_life))
++	var status := "DOWN" if is_dead else "ARMORED" if health.armor > 0 else "STRONG" if ratio >= 0.75 else "WEAK" if ratio <= 0.25 else "INJURED"
++	status_label.text = "[%s] HP %d/%d" % [status, health.life, health.max_life]
++
++
+ func _on_Attack_button_up() -> void:
+ 	if not combatants_node.get_node(^"Player").active:
+ 		return
+diff --git a/2d/role_playing_game/tests/agent_run_check.gd b/2d/role_playing_game/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..1318e01
+--- /dev/null
++++ b/2d/role_playing_game/tests/agent_run_check.gd
+@@ -0,0 +1,43 @@
++extends SceneTree
++
++func find_info(ui: Node, character_name: String) -> Node:
++	for info in ui.get_node("Combatants").get_children():
++		if info.get_node("VBoxContainer/NameContainer/Name").text == character_name:
++			return info
++	return null
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var combat: Node2D = load("res://combat/combat.tscn").instantiate()
++	root.add_child(combat)
++	await process_frame
++	var combatants := combat.get_node("Combatants")
++	var player: Node = load("res://combat/combatants/player.tscn").instantiate()
++	player.name = "Player"
++	var opponent: Node = load("res://combat/combatants/opponent.tscn").instantiate()
++	opponent.name = "Opponent"
++	combatants.add_child(player)
++	combatants.add_child(opponent)
++	var health: Node = player.get_node("Health")
++	health.life = health.max_life
++	health.armor = 0
++	var ui := combat.get_node("CombatCanvas/UI")
++	ui.initialize()
++	var info := find_info(ui, "Player")
++	assert(info != null, "combatant info row is created")
++	var health_bar := info.get_node("VBoxContainer/HealthContainer/Health") as ProgressBar
++	var status := info.get_node("VBoxContainer/StatusLabel") as Label
++	assert(status.text.contains("STRONG") and status.text.contains("%d/%d" % [health.max_life, health.max_life]), "status text includes strong state and exact HP")
++	assert(health_bar.value == health.max_life, "health bar still reflects life")
++	health.take_damage(health.max_life - 2)
++	assert(status.text.contains("WEAK") and status.text.contains("2/%d" % health.max_life), "low-health event has textual warning and number")
++	assert(health_bar.value == 2.0, "health bar updates alongside text")
++	health.heal(5)
++	assert(status.text.contains("INJURED") and status.text.contains("7/%d" % health.max_life), "recovery updates textual condition")
++	health.armor = 2
++	health.heal(0)
++	assert(status.text.contains("ARMORED"), "armor is represented textually")
++	print("PASS: 7 combat health-status assertions")
++	quit(0)

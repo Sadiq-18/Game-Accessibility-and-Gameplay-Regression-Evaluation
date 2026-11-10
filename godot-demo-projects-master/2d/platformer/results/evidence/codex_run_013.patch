@@ -1,0 +1,151 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..172abda 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,19 @@
+ extends CanvasLayer
+ 
+ signal start_game
++signal difficulty_selected(index: int)
++
++@onready var difficulty_option := $DifficultyOption as OptionButton
++
++func _ready() -> void:
++	difficulty_option.add_item("Easy")
++	difficulty_option.add_item("Normal")
++	difficulty_option.add_item("Hard")
++	difficulty_option.select(1)
++
++
++func _on_difficulty_option_item_selected(index: int) -> void:
++	difficulty_selected.emit(index)
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+@@ -23,6 +36,7 @@ func update_score(score):
+ 
+ func _on_StartButton_pressed():
+ 	$StartButton.hide()
++	difficulty_option.hide()
+ 	start_game.emit()
+ 
+ 
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..3ce6f73 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -54,8 +54,25 @@ theme_override_font_sizes/font_size = 60
+ shortcut = SubResource("4")
+ text = "Start"
+ 
++[node name="DifficultyOption" type="OptionButton" parent="." unique_id=199120001]
++anchors_preset = 7
++anchor_left = 0.5
++anchor_top = 1.0
++anchor_right = 0.5
++anchor_bottom = 1.0
++offset_left = -130.0
++offset_top = -300.0
++offset_right = 130.0
++offset_bottom = -245.0
++grow_horizontal = 2
++grow_vertical = 0
++theme_override_fonts/font = ExtResource("2_2jm3i")
++theme_override_font_sizes/font_size = 30
++text = "Normal"
++
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
++[connection signal="item_selected" from="DifficultyOption" to="." method="_on_difficulty_option_item_selected"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/main.gd b/2d/dodge_the_creeps/main.gd
+index bd74c2e..8dfe73b 100644
+--- a/2d/dodge_the_creeps/main.gd
++++ b/2d/dodge_the_creeps/main.gd
+@@ -2,6 +2,23 @@ extends Node
+ 
+ @export var mob_scene: PackedScene
+ var score
++var difficulty_index: int = 1
++var mob_speed_multiplier: float = 1.0
++var mob_spawn_interval: float = 0.5
++
++func _on_difficulty_selected(index: int) -> void:
++	difficulty_index = clampi(index, 0, 2)
++	match difficulty_index:
++		0:
++			mob_speed_multiplier = 0.7
++			mob_spawn_interval = 1.0
++		1:
++			mob_speed_multiplier = 1.0
++			mob_spawn_interval = 0.5
++		2:
++			mob_speed_multiplier = 1.3
++			mob_spawn_interval = 0.3
++	$MobTimer.wait_time = mob_spawn_interval
+ 
+ func game_over():
+ 	$ScoreTimer.stop()
+@@ -40,7 +57,7 @@ func _on_MobTimer_timeout():
+ 	mob.rotation = direction
+ 
+ 	# Choose the velocity for the mob.
+-	var velocity = Vector2(randf_range(150.0, 250.0), 0.0)
++	var velocity = Vector2(randf_range(150.0, 250.0) * mob_speed_multiplier, 0.0)
+ 	mob.linear_velocity = velocity.rotated(direction)
+ 
+ 	# Spawn the mob by adding it to the Main scene.
+diff --git a/2d/dodge_the_creeps/main.tscn b/2d/dodge_the_creeps/main.tscn
+index c84519c..2e2eec9 100644
+--- a/2d/dodge_the_creeps/main.tscn
++++ b/2d/dodge_the_creeps/main.tscn
+@@ -57,3 +57,4 @@ stream = ExtResource("6_hp1r0")
+ [connection signal="timeout" from="ScoreTimer" to="." method="_on_ScoreTimer_timeout"]
+ [connection signal="timeout" from="StartTimer" to="." method="_on_StartTimer_timeout"]
+ [connection signal="start_game" from="HUD" to="." method="new_game"]
++[connection signal="difficulty_selected" from="HUD" to="." method="_on_difficulty_selected"]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..ee2ab9c
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,37 @@
++extends SceneTree
++
++func latest_mob(main: Node) -> RigidBody2D:
++	var found: RigidBody2D
++	for child in main.get_children():
++		if child is RigidBody2D:
++			found = child as RigidBody2D
++	return found
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud := main.get_node("HUD")
++	var option := hud.get_node("DifficultyOption") as OptionButton
++	assert(option.item_count == 3 and option.selected == 1, "Easy/Normal/Hard selector defaults to Normal")
++	hud.call("_on_difficulty_option_item_selected", 0)
++	assert(is_equal_approx(main.mob_spawn_interval, 1.0), "Easy increases mob spawn interval")
++	assert(is_equal_approx(main.mob_speed_multiplier, 0.7), "Easy reduces mob speed")
++	assert(is_equal_approx(main.get_node("MobTimer").wait_time, 1.0), "Easy timer applied")
++	main.call("_on_MobTimer_timeout")
++	var easy_mob := latest_mob(main)
++	assert(easy_mob != null and easy_mob.linear_velocity.length() >= 105.0 and easy_mob.linear_velocity.length() <= 175.0, "Easy mob velocity is reduced")
++	hud.call("_on_difficulty_option_item_selected", 1)
++	assert(is_equal_approx(main.get_node("MobTimer").wait_time, 0.5), "Normal timer preserves baseline")
++	main.call("_on_MobTimer_timeout")
++	var normal_mob := latest_mob(main)
++	assert(normal_mob.linear_velocity.length() >= 150.0 and normal_mob.linear_velocity.length() <= 250.0, "Normal mob speed preserves baseline")
++	hud.call("_on_difficulty_option_item_selected", 2)
++	assert(is_equal_approx(main.get_node("MobTimer").wait_time, 0.3), "Hard increases spawn rate")
++	assert(is_equal_approx(main.mob_speed_multiplier, 1.3), "Hard increases mob speed")
++	assert(main.get_node("Player") != null, "player scene remains present")
++	print("PASS: 10 difficulty and regression assertions")
++	quit(0)

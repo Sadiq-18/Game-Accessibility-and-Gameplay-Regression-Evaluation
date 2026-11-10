@@ -1,0 +1,154 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..07389b4 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,7 @@
+ extends CanvasLayer
+ 
+ signal start_game
++signal palette_toggled(enabled: bool)
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+@@ -26,5 +27,9 @@ func _on_StartButton_pressed():
+ 	start_game.emit()
+ 
+ 
++func _on_palette_toggled(enabled: bool) -> void:
++	palette_toggled.emit(enabled)
++
++
+ func _on_MessageTimer_timeout():
+ 	$MessageLabel.hide()
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..db1954d 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -54,8 +54,25 @@ theme_override_font_sizes/font_size = 60
+ shortcut = SubResource("4")
+ text = "Start"
+ 
++[node name="PaletteToggle" type="CheckButton" parent="." unique_id=199120002]
++anchors_preset = 7
++anchor_left = 0.5
++anchor_top = 1.0
++anchor_right = 0.5
++anchor_bottom = 1.0
++offset_left = -170.0
++offset_top = -275.0
++offset_right = 170.0
++offset_bottom = -225.0
++grow_horizontal = 2
++grow_vertical = 0
++theme_override_fonts/font = ExtResource("2_2jm3i")
++theme_override_font_sizes/font_size = 24
++text = "High-visibility palette"
++
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
++[connection signal="toggled" from="PaletteToggle" to="." method="_on_palette_toggled"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/main.gd b/2d/dodge_the_creeps/main.gd
+index bd74c2e..813d445 100644
+--- a/2d/dodge_the_creeps/main.gd
++++ b/2d/dodge_the_creeps/main.gd
+@@ -2,6 +2,16 @@ extends Node
+ 
+ @export var mob_scene: PackedScene
+ var score
++const BASE_BACKGROUND := Color(0.219608, 0.372549, 0.380392, 1.0)
++const PALETTE_BACKGROUND := Color(0.055, 0.075, 0.12, 1.0)
++
++func _on_palette_toggled(enabled: bool) -> void:
++	Engine.set_meta("gab_color_palette", enabled)
++	$ColorRect.color = PALETTE_BACKGROUND if enabled else BASE_BACKGROUND
++	$Player.set_palette_enabled(enabled)
++	for child in get_children():
++		if child.has_method("set_palette_enabled"):
++			child.set_palette_enabled(enabled)
+ 
+ func game_over():
+ 	$ScoreTimer.stop()
+diff --git a/2d/dodge_the_creeps/main.tscn b/2d/dodge_the_creeps/main.tscn
+index c84519c..0100090 100644
+--- a/2d/dodge_the_creeps/main.tscn
++++ b/2d/dodge_the_creeps/main.tscn
+@@ -57,3 +57,4 @@ stream = ExtResource("6_hp1r0")
+ [connection signal="timeout" from="ScoreTimer" to="." method="_on_ScoreTimer_timeout"]
+ [connection signal="timeout" from="StartTimer" to="." method="_on_StartTimer_timeout"]
+ [connection signal="start_game" from="HUD" to="." method="new_game"]
++[connection signal="palette_toggled" from="HUD" to="." method="_on_palette_toggled"]
+diff --git a/2d/dodge_the_creeps/mob.gd b/2d/dodge_the_creeps/mob.gd
+index 6db2a0f..24bbd69 100644
+--- a/2d/dodge_the_creeps/mob.gd
++++ b/2d/dodge_the_creeps/mob.gd
+@@ -4,6 +4,11 @@ func _ready():
+ 	var mob_types = Array($AnimatedSprite2D.sprite_frames.get_animation_names())
+ 	$AnimatedSprite2D.animation = mob_types.pick_random()
+ 	$AnimatedSprite2D.play()
++	set_palette_enabled(Engine.get_meta("gab_color_palette", false))
++
++
++func set_palette_enabled(enabled: bool) -> void:
++	modulate = Color(1.0, 0.45, 0.0, 1.0) if enabled else Color.WHITE
+ 
+ 
+ func _on_VisibilityNotifier2D_screen_exited():
+diff --git a/2d/dodge_the_creeps/player.gd b/2d/dodge_the_creeps/player.gd
+index e2d3e87..832bca7 100644
+--- a/2d/dodge_the_creeps/player.gd
++++ b/2d/dodge_the_creeps/player.gd
+@@ -8,6 +8,10 @@ var screen_size # Size of the game window.
+ func _ready():
+ 	screen_size = get_viewport_rect().size
+ 	hide()
++	set_palette_enabled(Engine.get_meta("gab_color_palette", false))
++
++func set_palette_enabled(enabled: bool) -> void:
++	modulate = Color(0.0, 0.85, 1.0, 1.0) if enabled else Color.WHITE
+ 
+ 
+ func _process(delta):
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..0fe8c48
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,35 @@
++extends SceneTree
++
++func latest_mob(main: Node) -> Node:
++	var found: Node
++	for child in main.get_children():
++		if child is RigidBody2D and child.has_method("set_palette_enabled"):
++			found = child
++	return found
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	Engine.set_meta("gab_color_palette", false)
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud := main.get_node("HUD")
++	var toggle := hud.get_node("PaletteToggle") as CheckButton
++	assert(toggle != null, "palette mode toggle exists")
++	assert(main.get_node("ColorRect").color == Color(0.219608, 0.372549, 0.380392, 1.0), "background starts at baseline")
++	hud.call("_on_palette_toggled", true)
++	assert(Engine.get_meta("gab_color_palette"), "palette state enabled")
++	assert(main.get_node("Player").modulate == Color(0.0, 0.85, 1.0, 1.0), "player uses cyan high-visibility tint")
++	assert(main.get_node("ColorRect").color == Color(0.055, 0.075, 0.12, 1.0), "background changes to dark navy")
++	main.call("_on_MobTimer_timeout")
++	var mob := latest_mob(main)
++	assert(mob != null and mob.modulate == Color(1.0, 0.45, 0.0, 1.0), "new mobs use orange high-visibility tint")
++	hud.call("_on_palette_toggled", false)
++	assert(main.get_node("Player").modulate == Color.WHITE, "player tint restores")
++	assert(mob.modulate == Color.WHITE, "existing mob tint restores")
++	assert(main.get_node("ColorRect").color == Color(0.219608, 0.372549, 0.380392, 1.0), "background restores")
++	assert(main.get_node("Player").speed == 400, "player movement speed preserved")
++	print("PASS: 9 palette and regression assertions")
++	quit(0)

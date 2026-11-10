@@ -1,0 +1,169 @@
+diff --git a/2d/platformer/enemy/enemy.gd b/2d/platformer/enemy/enemy.gd
+index 69ffbf9..57c7125 100644
+--- a/2d/platformer/enemy/enemy.gd
++++ b/2d/platformer/enemy/enemy.gd
+@@ -44,6 +44,7 @@ func _physics_process(delta: float) -> void:
+ func destroy() -> void:
+ 	_state = State.DEAD
+ 	velocity = Vector2.ZERO
++	get_tree().call_group("captions", "show_caption", "Enemy Explode")
+ 
+ 
+ func get_new_animation() -> StringName:
+diff --git a/2d/platformer/level/caption_overlay.gd b/2d/platformer/level/caption_overlay.gd
+new file mode 100644
+index 0000000..5f0f039
+--- /dev/null
++++ b/2d/platformer/level/caption_overlay.gd
+@@ -0,0 +1,13 @@
++extends CanvasLayer
++
++@onready var panel := $CaptionPanel as PanelContainer
++@onready var caption_label := $CaptionPanel/CaptionLabel as Label
++@onready var timer := $Timer as Timer
++
++func show_caption(caption: String) -> void:
++	caption_label.text = caption
++	panel.show()
++	timer.start()
++
++func _on_timer_timeout() -> void:
++	panel.hide()
+diff --git a/2d/platformer/level/caption_overlay.tscn b/2d/platformer/level/caption_overlay.tscn
+new file mode 100644
+index 0000000..504ce87
+--- /dev/null
++++ b/2d/platformer/level/caption_overlay.tscn
+@@ -0,0 +1,47 @@
++[gd_scene format=3]
++
++[ext_resource type="Script" path="res://level/caption_overlay.gd" id="1_caption_script"]
++
++[sub_resource type="StyleBoxFlat" id="CaptionPanelStyle"]
++bg_color = Color(0, 0, 0, 0.9)
++border_width_left = 2
++border_width_top = 2
++border_width_right = 2
++border_width_bottom = 2
++border_color = Color(1, 1, 1, 1)
++content_margin_left = 12.0
++content_margin_top = 6.0
++content_margin_right = 12.0
++content_margin_bottom = 6.0
++
++[node name="CaptionOverlay" type="CanvasLayer" groups=["captions"]]
++layer = 120
++script = ExtResource("1_caption_script")
++
++[node name="CaptionPanel" type="PanelContainer" parent="."]
++visible = false
++anchors_preset = 10
++anchor_left = 0.5
++anchor_top = 1.0
++anchor_right = 0.5
++anchor_bottom = 1.0
++offset_left = -140.0
++offset_top = -62.0
++offset_right = 140.0
++offset_bottom = -16.0
++grow_horizontal = 2
++theme_override_styles/panel = SubResource("CaptionPanelStyle")
++
++[node name="CaptionLabel" type="Label" parent="CaptionPanel"]
++layout_mode = 2
++theme_override_colors/font_color = Color(1, 1, 1, 1)
++theme_override_font_sizes/font_size = 18
++text = ""
++horizontal_alignment = 1
++vertical_alignment = 1
++
++[node name="Timer" type="Timer" parent="."]
++wait_time = 1.8
++one_shot = true
++
++[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
+diff --git a/2d/platformer/level/coin.gd b/2d/platformer/level/coin.gd
+index 43d3854..385804f 100644
+--- a/2d/platformer/level/coin.gd
++++ b/2d/platformer/level/coin.gd
+@@ -9,3 +9,4 @@ extends Area2D
+ func _on_body_entered(body: Node2D) -> void:
+ 	animation_player.play(&"picked")
+ 	(body as Player).coin_collected.emit()
++	get_tree().call_group("captions", "show_caption", "Coin Pickup")
+diff --git a/2d/platformer/level/level.tscn b/2d/platformer/level/level.tscn
+index 17acbe6..c399383 100644
+--- a/2d/platformer/level/level.tscn
++++ b/2d/platformer/level/level.tscn
+@@ -19,6 +19,7 @@
+ [ext_resource type="Texture2D" uid="uid://dejfdvlpnwr3q" path="res://level/props/ground_flowers_1.webp" id="20"]
+ [ext_resource type="Texture2D" uid="uid://juv5i2dnrlbl" path="res://level/props/vine_1.webp" id="21"]
+ [ext_resource type="Texture2D" uid="uid://bhqeay3mivam5" path="res://level/props/vine_2.webp" id="22"]
++[ext_resource type="PackedScene" path="res://level/caption_overlay.tscn" id="23_caption"]
+ 
+ [sub_resource type="Animation" id="1"]
+ resource_name = "move"
+@@ -1720,3 +1721,5 @@ z_index = -2
+ position = Vector2(72, 639)
+ scale = Vector2(0.5, 0.5)
+ texture = ExtResource("17")
++
++[node name="CaptionOverlay" parent="." instance=ExtResource("23_caption")]
+diff --git a/2d/platformer/player/gun.gd b/2d/platformer/player/gun.gd
+index 86a6f1f..48fbe13 100644
+--- a/2d/platformer/player/gun.gd
++++ b/2d/platformer/player/gun.gd
+@@ -21,5 +21,6 @@ func shoot(direction: float = 1.0) -> bool:
+ 	bullet.set_as_top_level(true)
+ 	add_child(bullet)
+ 	sound_shoot.play()
++	get_tree().call_group("captions", "show_caption", "Shoot")
+ 	timer.start()
+ 	return true
+diff --git a/2d/platformer/player/player.gd b/2d/platformer/player/player.gd
+index 306ad72..1d25ee2 100644
+--- a/2d/platformer/player/player.gd
++++ b/2d/platformer/player/player.gd
+@@ -86,3 +86,4 @@ func try_jump() -> void:
+ 		return
+ 	velocity.y = JUMP_VELOCITY
+ 	jump_sound.play()
++	get_tree().call_group("captions", "show_caption", "Jump")
+diff --git a/2d/platformer/tests/agent_run_check.gd b/2d/platformer/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..9ee77bb
+--- /dev/null
++++ b/2d/platformer/tests/agent_run_check.gd
+@@ -0,0 +1,32 @@
++extends SceneTree
++
++func run_caption(overlay: Node, expected: String) -> bool:
++	return overlay.get_node("CaptionPanel/CaptionLabel").text == expected and overlay.get_node("CaptionPanel").visible
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var game: Node = load("res://game_singleplayer.tscn").instantiate()
++	root.add_child(game)
++	await process_frame
++	var overlay := get_first_node_in_group("captions")
++	assert(overlay != null, "caption overlay is present")
++	var player: Player = game.get_node("Level/Player")
++	player._double_jump_charged = true
++	player.try_jump()
++	assert(run_caption(overlay, "Jump"), "jump event displays caption")
++	assert(overlay.get_node("Timer").time_left > 0.0, "caption has timed dismissal")
++	player.gun.shoot(1.0)
++	assert(run_caption(overlay, "Shoot"), "shoot event displays caption")
++	var enemies := game.find_children("*", "Enemy", true, false)
++	assert(not enemies.is_empty(), "game contains an enemy")
++	(enemies[0] as Enemy).destroy()
++	assert(run_caption(overlay, "Enemy Explode"), "enemy event displays caption")
++	var coins := game.find_children("*", "Coin", true, false)
++	assert(not coins.is_empty(), "game contains a coin")
++	(coins[0] as Coin)._on_body_entered(player)
++	assert(run_caption(overlay, "Coin Pickup"), "coin event displays caption")
++	assert(player.collision_mask == 30, "player collision mask preserved")
++	print("PASS: 9 caption and regression assertions")
++	quit(0)

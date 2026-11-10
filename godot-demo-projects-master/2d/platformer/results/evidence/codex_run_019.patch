@@ -1,0 +1,102 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..0664b6c 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,30 @@
++class_name HUD
+ extends CanvasLayer
+ 
+ signal start_game
++static var text_size_index: int = 0
++@onready var score_label := $ScoreLabel as Label
++@onready var message_label := $MessageLabel as Label
++@onready var text_size_option := $TextSizeOption as OptionButton
++
++func _ready() -> void:
++	text_size_option.add_item("Normal text")
++	text_size_option.add_item("Large text")
++	text_size_option.select(text_size_index)
++	_apply_text_size()
++
++
++func _on_text_size_selected(index: int) -> void:
++	text_size_index = clampi(index, 0, 1)
++	_apply_text_size()
++
++
++func _apply_text_size() -> void:
++	for label in [score_label, message_label]:
++		if text_size_index == 1:
++			label.add_theme_font_size_override("font_size", 84)
++		else:
++			label.add_theme_font_size_override("font_size", 60)
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..c854b8d 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -37,6 +37,17 @@ text = "Dodge the
+ Creeps"
+ horizontal_alignment = 1
+ 
++[node name="TextSizeOption" type="OptionButton" parent="." unique_id=199120007]
++anchors_preset = 1
++anchor_left = 1.0
++anchor_right = 1.0
++offset_left = -230.0
++offset_top = 90.0
++offset_right = -10.0
++offset_bottom = 140.0
++grow_horizontal = 0
++text = "Normal text"
++
+ [node name="StartButton" type="Button" parent="." unique_id=1561548516]
+ anchors_preset = 7
+ anchor_left = 0.5
+@@ -58,4 +69,5 @@ text = "Start"
+ one_shot = true
+ 
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
++[connection signal="item_selected" from="TextSizeOption" to="." method="_on_text_size_selected"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..f11660a
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,33 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	HUD.text_size_index = 0
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud: Node = main.get_node("HUD")
++	var score := hud.get_node("ScoreLabel") as Label
++	var message := hud.get_node("MessageLabel") as Label
++	var option := hud.get_node("TextSizeOption") as OptionButton
++	assert(option.item_count == 2 and option.selected == 0, "Normal and Large options exist with Normal default")
++	assert(score.get_theme_font_size("font_size") == 60, "score uses baseline text size")
++	assert(message.get_theme_font_size("font_size") == 60, "message uses baseline text size")
++	hud.call("_on_text_size_selected", 1)
++	assert(score.get_theme_font_size("font_size") == 84, "score grows to Large")
++	assert(message.get_theme_font_size("font_size") == 84, "message grows to Large")
++	hud.call("show_message", "Dodge the\nCreeps")
++	await process_frame
++	assert(message.visible and message.get_minimum_size().x <= 480.0, "large message fits base viewport width")
++	var second_hud: Node = load("res://hud.tscn").instantiate()
++	root.add_child(second_hud)
++	await process_frame
++	assert(second_hud.get_node("TextSizeOption").selected == 1, "large text preference persists across HUD instances")
++	assert(second_hud.get_node("ScoreLabel").get_theme_font_size("font_size") == 84, "persisted score size is applied")
++	hud.call("_on_text_size_selected", 0)
++	assert(score.get_theme_font_size("font_size") == 60, "Normal restores baseline")
++	assert(main.get_node("Player").speed == 400, "player movement speed preserved")
++	print("PASS: 10 text-size and regression assertions")
++	quit(0)

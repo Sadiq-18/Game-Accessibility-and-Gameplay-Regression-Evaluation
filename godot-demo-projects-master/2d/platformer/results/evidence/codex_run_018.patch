@@ -1,0 +1,74 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..c98065c 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,14 @@
+ extends CanvasLayer
+ 
+ signal start_game
++@onready var mute_button := $MuteAudioButton as CheckButton
++
++func _ready() -> void:
++	mute_button.button_pressed = AudioServer.is_bus_mute(0)
++
++
++func _on_mute_toggled(muted: bool) -> void:
++	AudioServer.set_bus_mute(0, muted)
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..98ad620 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -54,8 +54,20 @@ theme_override_font_sizes/font_size = 60
+ shortcut = SubResource("4")
+ text = "Start"
+ 
++[node name="MuteAudioButton" type="CheckButton" parent="." unique_id=199120006]
++anchors_preset = 1
++anchor_left = 1.0
++anchor_right = 1.0
++offset_left = -210.0
++offset_top = 90.0
++offset_right = -10.0
++offset_bottom = 140.0
++grow_horizontal = 0
++text = "Mute audio"
++
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
++[connection signal="toggled" from="MuteAudioButton" to="." method="_on_mute_toggled"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..f5efe16
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,24 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	AudioServer.set_bus_mute(0, false)
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var hud := main.get_node("HUD")
++	var button := hud.get_node("MuteAudioButton") as CheckButton
++	assert(button != null and button.text == "Mute audio", "one-click mute control exists")
++	assert(not AudioServer.is_bus_mute(0), "master audio starts unmuted")
++	hud.call("_on_mute_toggled", true)
++	assert(AudioServer.is_bus_mute(0), "toggle mutes master output immediately")
++	assert(main.get_node("Music").bus == "Master", "music routes through muted master")
++	assert(main.get_node("DeathSound").bus == "Master", "death sound routes through muted master")
++	hud.call("_on_mute_toggled", false)
++	assert(not AudioServer.is_bus_mute(0), "toggle restores all game audio")
++	assert(main.get_node("Player") != null, "player remains available after muting")
++	AudioServer.set_bus_mute(0, false)
++	print("PASS: 7 mute and regression assertions")
++	quit(0)

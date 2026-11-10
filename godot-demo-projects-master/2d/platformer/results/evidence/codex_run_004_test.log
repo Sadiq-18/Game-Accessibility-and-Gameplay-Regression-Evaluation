@@ -1,0 +1,19 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS: Master, Music, and SFX buses are available
+PASS: mute toggles for all three buses are visible
+PASS: SFX mute toggle mutes the selected bus
+PASS: muting preserves the prior SFX volume
+PASS: Music and SFX mute independently
+PASS: unmuting restores SFX output
+PASS: unmuting restores the exact previous SFX volume
+PASS: Master mute affects the full mix without clearing Music's mute state
+PASS: mute preference persists into a new pause menu instance
+PASS: bus mute state persists across menu instances
+PASS: pause/resume and muted audio state remain independent
+PASS: jump/gameplay logic still runs while audio is muted
+RESULT: PASS; mute controls and selected gameplay regression checks passed.
+WARNING: 6 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

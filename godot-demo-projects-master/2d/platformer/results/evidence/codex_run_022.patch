@@ -1,0 +1,118 @@
+diff --git a/2d/dodge_the_creeps/hud.gd b/2d/dodge_the_creeps/hud.gd
+index b4504f1..67aa4d8 100644
+--- a/2d/dodge_the_creeps/hud.gd
++++ b/2d/dodge_the_creeps/hud.gd
+@@ -1,6 +1,10 @@
+ extends CanvasLayer
+ 
+ signal start_game
++@onready var pointer_follow_toggle := $PointerFollowToggle as CheckButton
++
++func _on_pointer_follow_toggled(enabled: bool) -> void:
++	Engine.set_meta("gab_pointer_follow", enabled)
+ 
+ func show_message(text):
+ 	$MessageLabel.text = text
+diff --git a/2d/dodge_the_creeps/hud.tscn b/2d/dodge_the_creeps/hud.tscn
+index cc4cf65..3405bb7 100644
+--- a/2d/dodge_the_creeps/hud.tscn
++++ b/2d/dodge_the_creeps/hud.tscn
+@@ -54,8 +54,23 @@ theme_override_font_sizes/font_size = 60
+ shortcut = SubResource("4")
+ text = "Start"
+ 
++[node name="PointerFollowToggle" type="CheckButton" parent="." unique_id=199120010]
++anchors_preset = 7
++anchor_left = 0.5
++anchor_top = 1.0
++anchor_right = 0.5
++anchor_bottom = 1.0
++offset_left = -150.0
++offset_top = -280.0
++offset_right = 150.0
++offset_bottom = -225.0
++grow_horizontal = 2
++grow_vertical = 0
++text = "Follow pointer"
++
+ [node name="MessageTimer" type="Timer" parent="." unique_id=1675980570]
+ one_shot = true
+ 
+ [connection signal="pressed" from="StartButton" to="." method="_on_StartButton_pressed"]
++[connection signal="toggled" from="PointerFollowToggle" to="." method="_on_pointer_follow_toggled"]
+ [connection signal="timeout" from="MessageTimer" to="." method="_on_MessageTimer_timeout"]
+diff --git a/2d/dodge_the_creeps/player.gd b/2d/dodge_the_creeps/player.gd
+index e2d3e87..1a49561 100644
+--- a/2d/dodge_the_creeps/player.gd
++++ b/2d/dodge_the_creeps/player.gd
+@@ -12,14 +12,19 @@ func _ready():
+ 
+ func _process(delta):
+ 	var velocity = Vector2.ZERO # The player's movement vector.
+-	if Input.is_action_pressed(&"move_right"):
+-		velocity.x += 1
+-	if Input.is_action_pressed(&"move_left"):
+-		velocity.x -= 1
+-	if Input.is_action_pressed(&"move_down"):
+-		velocity.y += 1
+-	if Input.is_action_pressed(&"move_up"):
+-		velocity.y -= 1
++	if Engine.get_meta("gab_pointer_follow", false):
++		var to_pointer := get_global_mouse_position() - global_position
++		if to_pointer.length() > 4.0:
++			velocity = to_pointer.normalized()
++	else:
++		if Input.is_action_pressed(&"move_right"):
++			velocity.x += 1
++		if Input.is_action_pressed(&"move_left"):
++			velocity.x -= 1
++		if Input.is_action_pressed(&"move_down"):
++			velocity.y += 1
++		if Input.is_action_pressed(&"move_up"):
++			velocity.y -= 1
+ 
+ 	if velocity.length() > 0:
+ 		velocity = velocity.normalized() * speed
+diff --git a/2d/dodge_the_creeps/tests/agent_run_check.gd b/2d/dodge_the_creeps/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..f95bb07
+--- /dev/null
++++ b/2d/dodge_the_creeps/tests/agent_run_check.gd
+@@ -0,0 +1,37 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	Engine.set_meta("gab_pointer_follow", false)
++	var main: Node = load("res://main.tscn").instantiate()
++	root.add_child(main)
++	await process_frame
++	var player: Area2D = main.get_node("Player")
++	var hud := main.get_node("HUD")
++	var toggle := hud.get_node("PointerFollowToggle") as CheckButton
++	assert(toggle != null, "pointer-follow setting is available")
++	assert(player.speed == 400, "baseline player speed is preserved")
++	player.start(Vector2(220, 360))
++	Input.warp_mouse(Vector2(450, 360))
++	await process_frame
++	var target := player.get_global_mouse_position()
++	var distance_before := player.global_position.distance_to(target)
++	hud.call("_on_pointer_follow_toggled", true)
++	player._process(0.1)
++	var distance_after := player.global_position.distance_to(player.get_global_mouse_position())
++	assert(distance_after < distance_before, "enabled player moves smoothly toward pointer")
++	assert(player.position != Vector2(220, 360), "pointer-follow changes player position")
++	hud.call("_on_pointer_follow_toggled", false)
++	player.position = Vector2(100, 100)
++	Input.action_press("move_right")
++	player._process(0.1)
++	assert(player.position.x > 100.0, "keyboard movement remains available when pointer mode is off")
++	Input.action_release("move_right")
++	player.position = Vector2(10000, 10000)
++	player._process(0.1)
++	assert(player.position.x <= player.screen_size.x and player.position.y <= player.screen_size.y, "player remains clamped to screen")
++	assert(player.get_node("CollisionShape2D") != null, "player collision remains present")
++	print("PASS: 8 pointer-follow and regression assertions; pointer=%s" % str(target))
++	quit(0)

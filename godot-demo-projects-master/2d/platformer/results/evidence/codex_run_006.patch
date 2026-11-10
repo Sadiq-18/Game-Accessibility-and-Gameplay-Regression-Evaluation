@@ -1,0 +1,91 @@
+diff --git a/2d/platformer/agent_run_check.gd b/2d/platformer/agent_run_check.gd
+new file mode 100644
+index 0000000..6850e12
+--- /dev/null
++++ b/2d/platformer/agent_run_check.gd
+@@ -0,0 +1,22 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var scene = load("res://game_splitscreen.tscn")
++	assert(scene != null, "split-screen scene loads")
++	var game = scene.instantiate()
++	root.add_child(game)
++	await process_frame
++	var p1 = game.get_node("Black/SplitContainer/ViewportContainer1/Viewport1/Player1")
++	var p2 = game.get_node("Black/SplitContainer/ViewportContainer1/Viewport1/Player2")
++	assert(p1.get_node("PlayerBadge").visible, "P1 badge visible")
++	assert(p2.get_node("PlayerBadge").visible, "P2 badge visible")
++	assert(p1.get_node("PlayerBadge/BadgeText").text == "P1", "P1 label")
++	assert(p2.get_node("PlayerBadge/BadgeText").text == "P2", "P2 label")
++	assert(p1.collision_mask == 30 and p2.collision_mask == 30, "collision masks preserved")
++	assert(game.get_node("Black/SplitContainer/ViewportContainer1/Viewport1").size == Vector2i(399, 480), "viewport 1 size preserved")
++	assert(game.get_node("Black/SplitContainer/ViewportContainer2/Viewport2").size == Vector2i(399, 480), "viewport 2 size preserved")
++	print("PASS: 7 split-screen identity and regression assertions")
++	quit(0)
+diff --git a/2d/platformer/player/player.gd b/2d/platformer/player/player.gd
+index 306ad72..c49de5c 100644
+--- a/2d/platformer/player/player.gd
++++ b/2d/platformer/player/player.gd
+@@ -21,9 +21,17 @@ const TERMINAL_VELOCITY = 700
+ @onready var jump_sound := $Jump as AudioStreamPlayer2D
+ @onready var gun: Gun = sprite.get_node(^"Gun")
+ @onready var camera := $Camera as Camera2D
++@onready var player_badge := $PlayerBadge as PanelContainer
++@onready var player_badge_label := $PlayerBadge/BadgeText as Label
+ var _double_jump_charged: bool = false
+ 
+ 
++func _ready() -> void:
++	player_badge.visible = action_suffix == "_p1" or action_suffix == "_p2"
++	if player_badge.visible:
++		player_badge_label.text = "P1" if action_suffix == "_p1" else "P2"
++
++
+ func _physics_process(delta: float) -> void:
+ 	if is_on_floor():
+ 		_double_jump_charged = true
+diff --git a/2d/platformer/player/player.tscn b/2d/platformer/player/player.tscn
+index 6108e1d..c464420 100644
+--- a/2d/platformer/player/player.tscn
++++ b/2d/platformer/player/player.tscn
+@@ -185,6 +185,14 @@ _data = {
+ [sub_resource type="RectangleShape2D" id="11"]
+ size = Vector2(42.5, 54.5)
+ 
++[sub_resource type="StyleBoxFlat" id="PlayerBadgeStyle"]
++bg_color = Color(1, 1, 1, 1)
++border_width_left = 2
++border_width_top = 2
++border_width_right = 2
++border_width_bottom = 2
++border_color = Color(0, 0, 0, 1)
++
+ [node name="Player" type="CharacterBody2D" unique_id=457318108]
+ scale = Vector2(0.8, 0.8)
+ collision_mask = 30
+@@ -207,6 +215,21 @@ hframes = 8
+ vframes = 8
+ frame = 42
+ 
++[node name="PlayerBadge" type="PanelContainer" parent="."]
++offset_left = -12.0
++offset_top = -49.0
++offset_right = 12.0
++offset_bottom = -29.0
++theme_override_styles/panel = SubResource("PlayerBadgeStyle")
++
++[node name="BadgeText" type="Label" parent="PlayerBadge"]
++layout_mode = 2
++theme_override_colors/font_color = Color(0, 0, 0, 1)
++theme_override_font_sizes/font_size = 13
++text = "P1"
++horizontal_alignment = 1
++vertical_alignment = 1
++
+ [node name="Gun" type="Marker2D" parent="Sprite2D" unique_id=1823254857]
+ position = Vector2(14, 1)
+ script = ExtResource("8")

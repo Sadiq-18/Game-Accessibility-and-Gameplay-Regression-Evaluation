@@ -1,0 +1,80 @@
+[
+  {
+    "run_id": "demo-01",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-PLAT-01",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "changed_files": ["gui/pause_menu.tscn", "gui/pause_menu.gd"],
+    "notes": "Synthetic fixture illustrating joint success. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-02",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-PLAT-03",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "changed_files": [],
+    "notes": "Synthetic fixture illustrating joint success. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-03",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-DTC-01",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "changed_files": [],
+    "notes": "Synthetic fixture illustrating joint success. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-04",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-DTC-07",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "changed_files": [],
+    "notes": "Synthetic fixture illustrating joint success. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-05",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-RPG-01",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "changed_files": [],
+    "notes": "Synthetic fixture illustrating joint success. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-06",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-RPG-04",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": true,
+    "changed_files": [],
+    "notes": "Synthetic fixture illustrating joint success. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-07",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-PLAT-02",
+    "accessibility_checks_passed": true,
+    "gameplay_checks_passed": false,
+    "changed_files": [],
+    "notes": "Synthetic fixture illustrating accessibility success with a regression. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-08",
+    "run_type": "synthetic_demo",
+    "task_id": "GODOT-RPG-06",
+    "accessibility_checks_passed": false,
+    "gameplay_checks_passed": true,
+    "changed_files": [],
+    "notes": "Synthetic fixture illustrating accessibility failure without regression. Not a measured AI-agent run."
+  },
+  {
+    "run_id": "demo-09",
+    "run_type": "blocked_run",
+    "task_id": "GODOT-RPG-05",
+    "blocking_reason": "Synthetic example: baseline behavior was not verified, so this run is excluded from metric denominators."
+  }
+]

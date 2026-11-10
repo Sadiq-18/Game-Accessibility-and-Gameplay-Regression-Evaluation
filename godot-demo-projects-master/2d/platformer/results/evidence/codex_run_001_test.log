@@ -1,0 +1,31 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+PASS: pause menu exposes Normal and Large text sizes
+PASS: text size options have the expected labels
+PASS: Normal is the default and preserves theme font sizing
+PASS: selecting Large updates the session preference
+PASS: Large applies 30 px title text immediately
+PASS: Large applies 24 px menu button text immediately
+PASS: Large applies 24 px selector text immediately
+PASS: Large applies 24 px setting label text
+PASS: Large text controls remain inside the game viewport
+PASS: Large text labels and buttons meet their content-driven minimum sizes
+PASS: Large text menu rows do not overlap
+PASS: Large preference persists when a new pause menu instance is created
+PASS: Normal restores the theme's original button size
+PASS: baseline single-player scene loads its player
+PASS: movement and jump constants match the unmodified baseline
+PASS: baseline right-movement input still moves the player
+PASS: baseline player remains grounded before the first jump
+PASS: baseline first jump still applies the expected jump velocity
+PASS: baseline double-jump behavior is preserved
+PASS: baseline shooting creates a bullet
+PASS: baseline shooting cooldown still prevents an immediate second shot
+PASS: baseline bullet speed is unchanged
+PASS: bullet contact still triggers the enemy destruction state
+PASS: physical coin pickup still updates the pause-menu counter
+PASS: baseline pause action pauses the game tree
+PASS: baseline pause action resumes the game tree
+PASS: pause-menu transition to splitscreen still loads
+PASS: pause-menu transition back to singleplayer still loads
+RESULT: PASS; all accessibility acceptance and selected gameplay regression checks passed.

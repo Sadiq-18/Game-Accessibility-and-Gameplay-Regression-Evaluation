@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://wixdla7fpvws"
+
+[deps]
+
+files=["res://dataset/tasks_table.candidate.translation", "res://dataset/tasks_table.feature.translation", "res://dataset/tasks_table.screening.translation", "res://dataset/tasks_table.task.translation", "res://dataset/tasks_table.expected.translation", "res://dataset/tasks_table.target.translation"]
+
+source_file="res://dataset/tasks_table.csv"
+dest_files=["res://dataset/tasks_table.candidate.translation", "res://dataset/tasks_table.feature.translation", "res://dataset/tasks_table.screening.translation", "res://dataset/tasks_table.task.translation", "res://dataset/tasks_table.expected.translation", "res://dataset/tasks_table.target.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true

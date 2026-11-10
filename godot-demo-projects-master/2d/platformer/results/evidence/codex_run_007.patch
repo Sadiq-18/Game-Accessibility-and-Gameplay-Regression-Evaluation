@@ -1,0 +1,185 @@
+diff --git a/2d/platformer/gui/pause_menu.gd b/2d/platformer/gui/pause_menu.gd
+index a89c899..b1c981d 100644
+--- a/2d/platformer/gui/pause_menu.gd
++++ b/2d/platformer/gui/pause_menu.gd
+@@ -5,13 +5,101 @@ extends Control
+ @export var fade_in_duration := 0.3
+ @export var fade_out_duration := 0.2
+ 
++const REMAPPABLE_ACTIONS := ["move_left", "move_right", "jump", "shoot"]
++static var remapped_physical_keys: Dictionary = {}
++static var reduced_motion_enabled: bool = false
++
+ @onready var center_cont := $ColorRect/CenterContainer as CenterContainer
++@onready var remap_controls := center_cont.get_node(^"VBoxContainer/RemapControls") as VBoxContainer
+ @onready var resume_button := center_cont.get_node(^"VBoxContainer/ResumeButton") as Button
+ @onready var coins_counter := $ColorRect/CoinsCounter as CoinsCounter
++@onready var reduced_motion_button := $ColorRect/CenterContainer/VBoxContainer/ReducedMotionButton as CheckButton
++var awaiting_remap_action: String = ""
++var parallax_background: ParallaxBackground
++var original_base_scale := Vector2.ZERO
++var original_layer_scales: Array[Vector2] = []
+ 
+ 
+ func _ready() -> void:
+ 	hide()
++	for action in REMAPPABLE_ACTIONS:
++		_update_remap_button(action)
++	reduced_motion_button.button_pressed = reduced_motion_enabled
++	var roots := get_tree().root.find_children("*", "ParallaxBackground", true, false)
++	if not roots.is_empty():
++		parallax_background = roots[0] as ParallaxBackground
++		original_base_scale = parallax_background.scroll_base_scale
++		for layer in parallax_background.get_children():
++			if layer is ParallaxLayer:
++				original_layer_scales.append(layer.motion_scale)
++		_apply_reduced_motion()
++	set_process_unhandled_key_input(true)
++
++
++func _on_reduced_motion_toggled(enabled: bool) -> void:
++	reduced_motion_enabled = enabled
++	_apply_reduced_motion()
++
++
++func _apply_reduced_motion() -> void:
++	if not is_instance_valid(parallax_background):
++		return
++	parallax_background.scroll_base_scale = Vector2.ZERO if reduced_motion_enabled else original_base_scale
++	var index := 0
++	for layer in parallax_background.get_children():
++		if layer is ParallaxLayer:
++			var scale: Vector2 = original_layer_scales[index]
++			layer.motion_scale = Vector2.ZERO if reduced_motion_enabled else scale
++			index += 1
++
++
++func _on_remap_button_pressed(action: String) -> void:
++	if action not in REMAPPABLE_ACTIONS:
++		return
++	awaiting_remap_action = action
++	var button := _remap_button(action)
++	if button:
++		button.text = "Press a key..."
++
++
++func _unhandled_key_input(event: InputEvent) -> void:
++	if awaiting_remap_action.is_empty() or not event is InputEventKey or not event.pressed or event.echo:
++		return
++	var key_event := event as InputEventKey
++	if key_event.keycode == KEY_ESCAPE:
++		return
++	var remapped := InputEventKey.new()
++	remapped.physical_keycode = key_event.physical_keycode if key_event.physical_keycode != 0 else key_event.keycode
++	for existing in InputMap.action_get_events(awaiting_remap_action):
++		if existing is InputEventKey:
++			InputMap.action_erase_event(awaiting_remap_action, existing)
++	InputMap.action_add_event(awaiting_remap_action, remapped)
++	remapped_physical_keys[awaiting_remap_action] = remapped.physical_keycode
++	var action := awaiting_remap_action
++	awaiting_remap_action = ""
++	_update_remap_button(action)
++	get_viewport().set_input_as_handled()
++
++
++func _remap_button(action: String) -> Button:
++	return remap_controls.get_node_or_null(action + "Button") as Button
++
++
++func _update_remap_button(action: String) -> void:
++	var button := _remap_button(action)
++	if not button:
++		return
++	var keycode: int = remapped_physical_keys.get(action, _default_key_for(action))
++	button.text = "%s: %s" % [action.replace("_", " ").capitalize(), OS.get_keycode_string(keycode)]
++
++
++func _default_key_for(action: String) -> int:
++	match action:
++		"move_left": return KEY_A
++		"move_right": return KEY_D
++		"jump": return KEY_W
++		"shoot": return KEY_SPACE
++	return 0
+ 
+ 
+ func close() -> void:
+diff --git a/2d/platformer/gui/pause_menu.tscn b/2d/platformer/gui/pause_menu.tscn
+index bd79e7b..6045fbd 100644
+--- a/2d/platformer/gui/pause_menu.tscn
++++ b/2d/platformer/gui/pause_menu.tscn
+@@ -49,6 +49,31 @@ layout_mode = 2
+ size_flags_horizontal = 4
+ text = "Resume"
+ 
++[node name="RemapControls" type="VBoxContainer" parent="ColorRect/CenterContainer/VBoxContainer"]
++layout_mode = 2
++size_flags_horizontal = 4
++
++[node name="move_leftButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/RemapControls"]
++layout_mode = 2
++text = "Move left"
++
++[node name="move_rightButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/RemapControls"]
++layout_mode = 2
++text = "Move right"
++
++[node name="jumpButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/RemapControls"]
++layout_mode = 2
++text = "Jump"
++
++[node name="shootButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer/RemapControls"]
++layout_mode = 2
++text = "Shoot"
++
++[node name="ReducedMotionButton" type="CheckButton" parent="ColorRect/CenterContainer/VBoxContainer"]
++layout_mode = 2
++size_flags_horizontal = 4
++text = "Reduced motion"
++
+ [node name="QuitButton" type="Button" parent="ColorRect/CenterContainer/VBoxContainer" unique_id=2134735849]
+ layout_mode = 2
+ size_flags_horizontal = 4
+@@ -62,4 +87,9 @@ offset_right = 105.0
+ offset_bottom = 50.0
+ 
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/ResumeButton" to="." method="_on_resume_button_pressed"]
++[connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/RemapControls/move_leftButton" to="." method="_on_remap_button_pressed" binds= ["move_left"]]
++[connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/RemapControls/move_rightButton" to="." method="_on_remap_button_pressed" binds= ["move_right"]]
++[connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/RemapControls/jumpButton" to="." method="_on_remap_button_pressed" binds= ["jump"]]
++[connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/RemapControls/shootButton" to="." method="_on_remap_button_pressed" binds= ["shoot"]]
++[connection signal="toggled" from="ColorRect/CenterContainer/VBoxContainer/ReducedMotionButton" to="." method="_on_reduced_motion_toggled"]
+ [connection signal="pressed" from="ColorRect/CenterContainer/VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]
+diff --git a/2d/platformer/tests/agent_run_check.gd b/2d/platformer/tests/agent_run_check.gd
+new file mode 100644
+index 0000000..fc3502c
+--- /dev/null
++++ b/2d/platformer/tests/agent_run_check.gd
+@@ -0,0 +1,27 @@
++extends SceneTree
++
++func _initialize() -> void:
++	call_deferred("run")
++
++func run() -> void:
++	var game: Node = load("res://game_singleplayer.tscn").instantiate()
++	root.add_child(game)
++	current_scene = game
++	await process_frame
++	var menu: PauseMenu = game.get_node("InterfaceLayer/PauseMenu")
++	var parallax := game.get_node("Level/ParallaxBackground") as ParallaxBackground
++	assert(parallax != null, "game contains parallax background")
++	var original := parallax.scroll_base_scale
++	var button := menu.get_node("ColorRect/CenterContainer/VBoxContainer/ReducedMotionButton") as CheckButton
++	assert(button != null, "reduced motion option is visible in pause menu")
++	button.button_pressed = true
++	assert(parallax.scroll_base_scale == Vector2.ZERO, "reduced motion freezes base parallax")
++	for layer in parallax.get_children():
++		if layer is ParallaxLayer:
++			assert(layer.motion_scale == Vector2.ZERO, "reduced motion freezes layer")
++	button.button_pressed = false
++	assert(parallax.scroll_base_scale == original, "turning off restores base parallax")
++	assert(menu.reduced_motion_enabled == false, "setting tracks disabled state")
++	assert(game.get_node("Level/Player").collision_mask == 30, "player collision mask preserved")
++	print("PASS: 7 reduced-motion and regression assertions")
++	quit(0)
