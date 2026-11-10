@@ -1,10 +1,4 @@
-# Dataset Documentation: Godot Game Accessibility Benchmark (GAB-36)
-
-**Authors**: Shaik Mohammad Sadiq (24BTRCL182) & Seethaka Umesh Reddy (24BTRCL181)  
-**Department**: Computer Science and Engineering, Jain (Deemed-to-be University)  
-**Project**: Evaluating AI Coding Agents for Game Accessibility Enhancement and Gameplay Regression Prevention  
-**Date**: October–November 2026  
-
+# Dataset Documentation: Godot Game Accessibility Benchmark
 ---
 
 ## 1. Overview and Purpose
