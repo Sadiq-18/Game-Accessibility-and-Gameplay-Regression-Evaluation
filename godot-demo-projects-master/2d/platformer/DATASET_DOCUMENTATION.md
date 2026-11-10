@@ -171,7 +171,7 @@ The one-time editor/import command registers Godot global script classes before 
 
 ## 7. How to Reproduce Dataset Generation
 
-From the assignment project folder (`godot-demo-projects-master/2d/platformer`), run:
+From the project folder (`godot-demo-projects-master/2d/platformer`), run:
 ```bash
 python src/dataset_generator.py
 ```
